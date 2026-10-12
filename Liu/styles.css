@@ -20,3 +20,9 @@
 .reveal table caption{font-size:17px;color:var(--muted);line-height:1.55;text-align:left;margin-top:12px}
 .reveal a{color:var(--teal)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Fit the expanded results table on a single slide. */
+.reveal #tbl-results table{font-size:21px;width:100%;margin:16px 0 22px;font-variant-numeric:tabular-nums}
+.reveal #tbl-results table th,.reveal #tbl-results table td{padding:13px 7px;line-height:1.35;white-space:nowrap}
+.reveal #tbl-results table th{font-size:18px}
+.reveal #tbl-results .quarto-float-caption{font-size:17px;line-height:1.5;color:var(--muted)}

@@ -16,15 +16,20 @@ for row in rows:
     if abs(row["cer"] - float(row["cer_reported_percent"])) > .0051:
         raise ValueError("Screenshot CER and counts disagree")
 rows.sort(key=lambda r: r["chunk_ms"])
-lines = ["| Chunk | CER ↓ | S 替換 | D 刪除 | I 插入 | N 參考字數 |", "|---:|---:|---:|---:|---:|---:|"]
+lines = ["| Chunk | CER ↓ | S 替換 | D 刪除 | I 插入 | N 參考字數 | Attention<br>context | Audio<br>(s) | Runtime<br>(s) | RTF ↓ | RTFx ↑ |", "|---:|---:|---:|---:|---:|---:|:---:|---:|---:|---:|---:|"]
 for r in rows:
-    lines.append(f"| {r['chunk_ms']} ms | {r['cer']:.2f}% | {r['substitutions']} | {r['deletions']} | {r['insertions']} | {r['reference_chars']} |")
-lines += ["", ": 不同 chunk 的結果；由使用者截圖轉錄，CER 以錯誤計數重新核算。 {#tbl-results}", ""]
+    rtf_display = f"{float(r['rtf']):.3f}"
+    rtfx_display = f"{float(r['rtfx']):.3f}"
+    if r['chunk_ms'] in (320, 560):
+        rtf_display = f"<b>{rtf_display}</b>"
+        rtfx_display = f"<b>{rtfx_display}</b>"
+    lines.append(f"| {r['chunk_ms']} ms | {r['cer']:.2f}% | {r['substitutions']} | {r['deletions']} | {r['insertions']} | {r['reference_chars']} | {r['att_context_size']} | {float(r['audio_duration_sec']):.6f} | {float(r['runtime_sec']):.2f} | {rtf_display} | {rtfx_display} |")
+lines += ["", ": 不同 chunk 的辨識結果與執行效率；保留原辨識數據，新增本次執行數據。 {#tbl-results}", ""]
 (ROOT / "results-table.qmd").write_text("\n".join(lines), encoding="utf-8")
 first, best = rows[0], min(rows, key=lambda r:r['cer'])
 pp = first['cer'] - best['cer']
 rel = 100 * pp / first['cer']
-text = f"本次最低 CER 出現在 **{best['chunk_ms']} ms：{best['cer']:.2f}%**。相較 {first['chunk_ms']} ms，降低 **{pp:.2f} 個百分點**，相對 CER 降幅約 **{rel:.0f}%**（以未四捨五入的計數計算）。\n"
+text = f"本次最低 CER 出現在 **{best['chunk_ms']} ms：{best['cer']:.2f}%**。相較 {first['chunk_ms']} ms，降低 **{pp:.2f} 個百分點**\n"
 (ROOT / "results-summary.qmd").write_text(text, encoding="utf-8")
 plt.rcParams.update({'font.family':'DejaVu Sans', 'font.size':12, 'axes.spines.top':False, 'axes.spines.right':False, 'svg.fonttype':'none', 'figure.facecolor':'#faf9f6', 'axes.facecolor':'#faf9f6', 'text.color':'#153447', 'axes.labelcolor':'#153447', 'xtick.color':'#577083', 'ytick.color':'#577083'})
 fig, ax = plt.subplots(figsize=(9.2,4.5),layout='constrained')
