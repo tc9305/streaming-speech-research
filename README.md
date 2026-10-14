@@ -48,7 +48,7 @@ scripts/            # 共用產生／發布腳本
 
 首頁為 `docs/index.html`。`docs` 是網站發布根目錄，不是另一套研究筆記；`notes` 是共用筆記原稿。來源和網頁版呈現相同內容是正常的，請更新原稿後再產生網頁，避免兩份各自修改。完整盤點與維護對照見 [架構與重複內容檢查](notes/repository-structure.md)。
 
-首頁、StreamST 入口與 Chiang 的 SpeechLLM 報告目前是手寫 HTML；其餘簡報／術語網頁為產生或同步的發布版本。Chiang 的網頁和簡報現僅存於 `Chiang/SpeechLLM/`，可用 Live Server 從該目錄預覽。
+首頁、StreamST 入口與 Chiang 的 SpeechLLM 報告目前是手寫 HTML；其餘簡報／術語網頁為產生或同步的發布版本。Chiang 的原稿在 `Chiang/SpeechLLM/`，發布副本在 `docs/Chiang/SpeechLLM/`。
 
 安裝 Quarto 後，在 repo 根目錄執行：
 
@@ -70,7 +70,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync_reports.ps1
 
 共用術語頁由 `notes/terminology.md` 產生。在 repo 根目錄執行 `python scripts/build_terminology.py`（需 Python 與 Quarto），再將 Markdown 原稿與 `docs/notes/terminology.html` 一起提交。
 
-GitHub Pages 由 [發布工作流程](.github/workflows/pages.yml)產生：執行 `node scripts/build_pages.mjs`，把 `docs/` 的網站與 `Chiang/SpeechLLM/` 合成暫時的 `.pages-build/`，再部署至 Pages。原稿及網頁只在 Chiang 維護一份；`.pages-build/` 不提交。GitHub Pages 的 Source 必須設為 **GitHub Actions**。
+GitHub Pages 設定為 Settings → Pages → Deploy from a branch → main → /docs。Chiang 的報告與簡報先在 `Chiang/SpeechLLM/` 維護，再執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync_chiang_pages.ps1` 同步到 `docs/Chiang/SpeechLLM/` 發布。
 
 ## 一起研究
 
