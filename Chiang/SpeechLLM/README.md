@@ -23,4 +23,6 @@ quarto render Chiang/SpeechLLM/llama-omni/slides.qmd
 
 簡報的 Reveal.js 資源另外存於 `llama-omni/slides_files/`，以便 VS Code Live Server 正常載入。網頁與簡報都只在 Chiang 目錄維護；請將原稿、HTML、圖片、CSS 與 `slides_files/` 一起提交。Live Server 請開啟 `Chiang/SpeechLLM/llama-omni/slides.html`。
 
+網站發布時由 `scripts/build_pages.mjs` 將本目錄與 `docs/` 合成暫時產物，不需要手動複製簡報。發布後網址為 `https://tc9305.github.io/streaming-speech-research/Chiang/SpeechLLM/`。
+
 輸出中文不等於忠實翻譯；目前證據不足以把失敗歸因於 adaptor 或否定架構能力。音訊與模型權重不納入 Git。

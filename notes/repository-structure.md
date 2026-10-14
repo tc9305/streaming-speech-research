@@ -6,7 +6,7 @@
 
 Chiang 的網頁、Quarto 簡報及研究紀錄已集中在 `Chiang/SpeechLLM/`。`docs/Chiang/SpeechLLM/` 中與原稿目錄位元組相同的簡報、CSS、PNG 與 Reveal.js 資源已移除；唯一的網頁報告搬到 `Chiang/SpeechLLM/index.html`。舊根目錄 `SpeechLLM/` 的導引 README 也已移除。下方 2026-10-09 的盤點與搬移紀錄保留作歷史參考。
 
-目前 GitHub Pages 仍以 `/docs` 為發布來源，因此 Chiang 的本機網頁及簡報不會在 Pages 發布。`docs/index.html` 與舊 `docs/SpeechLLM/index.html` 連到 GitHub 的 Chiang 資料夾，以免導向不存在的頁面。若要重新發布可直接瀏覽的簡報，需另行調整部署流程；目前只在 Chiang 維護單一份檔案。
+2026-10-15 另新增 GitHub Actions 發布流程：部署時暫時合併 `docs/` 與 `Chiang/SpeechLLM/`，產物不提交到 Git。Pages 的 Source 須設為 GitHub Actions；原始網頁與簡報仍只在 Chiang 維護一份。
 
 ## 現有架構的問題
 

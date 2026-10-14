@@ -70,7 +70,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync_reports.ps1
 
 共用術語頁由 `notes/terminology.md` 產生。在 repo 根目錄執行 `python scripts/build_terminology.py`（需 Python 與 Quarto），再將 Markdown 原稿與 `docs/notes/terminology.html` 一起提交。
 
-GitHub Pages 設定：Settings → Pages → Deploy from a branch → main → /docs → Save。將來源與更新的 `docs/` 一起 commit / push，即可發布 `docs/` 內的網站；Chiang 的報告與簡報現在只放在 `Chiang/`，因此不會出現在這個 Pages 網站上。
+GitHub Pages 由 [發布工作流程](.github/workflows/pages.yml)產生：執行 `node scripts/build_pages.mjs`，把 `docs/` 的網站與 `Chiang/SpeechLLM/` 合成暫時的 `.pages-build/`，再部署至 Pages。原稿及網頁只在 Chiang 維護一份；`.pages-build/` 不提交。GitHub Pages 的 Source 必須設為 **GitHub Actions**。
 
 ## 一起研究
 
