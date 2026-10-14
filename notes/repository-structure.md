@@ -1,6 +1,12 @@
 # Repo 架構與重複內容檢查
 
-檢查日期：2026-10-09。此檔是維護紀錄，不是新增的研究報告。
+初次檢查日期：2026-10-09；Chiang 目錄於 2026-10-15 再整理。此檔是維護紀錄，不是新增的研究報告。
+
+## 2026-10-15 Chiang 整理更新
+
+Chiang 的網頁、Quarto 簡報及研究紀錄已集中在 `Chiang/SpeechLLM/`。`docs/Chiang/SpeechLLM/` 中與原稿目錄位元組相同的簡報、CSS、PNG 與 Reveal.js 資源已移除；唯一的網頁報告搬到 `Chiang/SpeechLLM/index.html`。舊根目錄 `SpeechLLM/` 的導引 README 也已移除。下方 2026-10-09 的盤點與搬移紀錄保留作歷史參考。
+
+目前 GitHub Pages 仍以 `/docs` 為發布來源，因此 Chiang 的本機網頁及簡報不會在 Pages 發布。`docs/index.html` 與舊 `docs/SpeechLLM/index.html` 連到 GitHub 的 Chiang 資料夾，以免導向不存在的頁面。若要重新發布可直接瀏覽的簡報，需另行調整部署流程；目前只在 Chiang 維護單一份檔案。
 
 ## 現有架構的問題
 

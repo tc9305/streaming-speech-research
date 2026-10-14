@@ -3,8 +3,8 @@
 從共同的 SimulST 閱讀出發，延伸研究 Speech LLM。
 
 - [SpeechLLM 研究與進度](SpeechLLM/README.md)
-- [LLaMA-Omni 進度報告網頁](../docs/Chiang/SpeechLLM/index.html)
+- [LLaMA-Omni 進度報告網頁](SpeechLLM/index.html)
 - [共同 SimulST 簡報](../SimulST/README.md)
 - [共用術語筆記](../notes/terminology.md)
 
-個人研究原稿、實驗紀錄與後續程式放在此資料夾；網頁發布內容放在 `docs/Chiang/`。
+個人研究原稿、實驗紀錄、網頁與簡報都放在此資料夾。

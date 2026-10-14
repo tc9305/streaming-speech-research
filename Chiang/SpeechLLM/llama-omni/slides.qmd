@@ -1,0 +1,369 @@
+---
+title: "LLaMA-Omni：從初步測試回到模型架構"
+subtitle: "語音指令回應、翻譯嘗試與論文 §2.1–2.6"
+author: "Chiang｜Speech LLM 研究進度"
+date: "2026-10-15"
+lang: zh-TW
+format:
+  revealjs:
+    theme: simple
+    css: slides.css
+    width: 1280
+    height: 720
+    margin: 0.06
+    center: false
+    slide-number: c/t
+    transition: fade
+    controls: true
+    progress: true
+    hash: true
+    embed-resources: false
+    html-math-method: plain
+    output-file: slides.html
+---
+
+## 這次報告的起點
+
+::: {.lead}
+模型已能接收英文語音，產生文字與語音回答。<br>
+但要求它翻譯錄音原話時，輸出並不穩定。
+:::
+
+- 先看自己做的三段音訊、四種條件測試。
+- 再回到論文，理解模型如何處理輸入及生成回應。
+- 論文導讀止於 **§2.6 Inference**。
+
+::: {.source}
+本次實驗依[既有報告](../index.html)及研究者補充整理；論文為 [Fang et al., LLaMA-Omni, arXiv v1](https://arxiv.org/pdf/2409.06666v1)。
+:::
+
+::: {.notes}
+這份報告是研究進度，不是完成的論文複現。先由實際輸出提出問題，再用讀到的架構與訓練方式建立理解。§3 資料建構及後面的論文實驗不在這次導讀範圍內。
+:::
+
+## 「回答」與「翻譯」是不同任務
+
+::: {.compact-table}
+| 條件 | 輸入 | 希望模型做的事 |
+| --- | --- | --- |
+| C1 | 語音 | 回應錄音內容 |
+| C2 | 語音 | 英文逐字轉寫 |
+| C3 | 語音 | 翻譯錄音原話為繁體中文 |
+| C4 | 人工文字 | 跳過語音輸入路徑，要求翻譯 |
+:::
+
+::: {.takeaway}
+C3 中，研究者回報 **system 與 user 訊息都改為翻譯指令**，並要求不要回答錄音中的問題。
+:::
+
+::: {.source}
+三個內容 × 四個條件，共 12 筆文字輸出。完整 prompt、腳本與原始執行檔待回收核對；C3 指令設定依研究者本次補充。
+:::
+
+::: {.notes}
+C1 是語音問答，C2 是轉寫，C3 是語音翻譯，C4 是人工文字對照。要翻譯疑問句，就應保留它是疑問句，而不是回答它。C3 的 system 與 user 指令皆已修改是研究者明確補充；目前沒有原始 prompt.txt 可逐字引用，也還不能檢查程式是否把提示正確傳進模型。
+:::
+
+## C3：同一翻譯目標，輸出行為不同
+
+::: {.case-grid}
+::: {.case}
+**A01｜語音中的問句**
+
+*What are some cool music from the one thousand nine hundred and twenties?*
+
+**輸出：** 英文列舉 Louis Armstrong、Duke Ellington 等音樂例子。
+
+**觀察：** 回答了問題，未翻譯原問句。
+:::
+
+::: {.case}
+**A02｜語音中的直述句**
+
+*The meeting has been moved from Monday morning to Tuesday afternoon.*
+
+**輸出：**「会议已从星期一上午到星期二下半天进行。」
+
+**觀察：** 嘗試中文輸出，但改期語意不準確，也不是繁體。
+:::
+:::
+
+::: {.source}
+兩筆皆為 C3 語音條件；本頁摘要，原樣輸出見附錄。人工初判，沒有正式翻譯評分。
+:::
+
+::: {.notes}
+A01-C3 的原樣輸出完整列在附錄。它以英文回答問題，即使研究者回報 system 和 user 都改成翻譯要求，仍未呈現所需翻譯。A02-C3 的輸出包含簡體字，「下半天进行」也沒有忠實表達「改到週二下午」。兩個樣本的語句類型不同，但內容、詞彙和音訊也不同，不能將差異直接歸因於問句與直述句。
+:::
+
+## 原論文的提示與本次修改
+
+::: {.case-grid}
+::: {.case}
+**論文 Figure 3**
+
+**system：** 設定為能理解語音的助理。
+
+**user：** `<speech>` 後明確要求回答語音中的問題。
+:::
+
+::: {.case}
+**本次 C3**
+
+**system：** 研究者改為要求中文翻譯、不回答問題。
+
+**user：** 也一併改為翻譯指令。
+:::
+:::
+
+::: {.takeaway}
+這裡沒有「system 要翻譯、user 卻要回答」的指令衝突。輸出差異仍需回收實際 prompt 與腳本才能進一步分析。
+:::
+
+::: {.source}
+[論文 v1 Figure 3](https://arxiv.org/html/2409.06666v1)；本次 C3 修改依研究者補充，精確字句待原始紀錄核對。
+:::
+
+::: {.notes}
+論文 Figure 3 的原始 system 是一般助理角色設定；「Please answer the questions in the user's input speech」位於 user 訊息。研究者明確表示，C3 兩處都已改成翻譯指令，所以不能拿原 user 指令解釋本次 C3。這個對照只說明本次改了任務要求，並不證明模型為何沒依要求輸出。
+:::
+
+## 回到論文：四個主要模組
+
+![](assets/llama-omni-architecture.png){.architecture fig-alt="LLaMA-Omni 架構：語音輸入經 Speech Encoder、Speech Adaptor、Large Language Model，文字與語音同時生成；右側為兩階段訓練。"}
+
+::: {.source}
+架構圖為研究者提供的版本；模組與兩階段訓練對照[論文 v1 §2 與 Figure 2](https://arxiv.org/html/2409.06666v1)。
+:::
+
+::: {.notes}
+先看左下角的輸入語音，經 encoder 和 adaptor 到 LLM。LLM 一邊逐步生成文字，一邊將 hidden states 交給 speech decoder；decoder 產生 units，vocoder 再產生可播放的波形。右側說明兩階段訓練。此圖是資料流和訓練概念圖，並非每一步的實際計時圖。
+:::
+
+## §2.1–2.2：語音怎麼進入 LLM？
+
+::: {.process}
+語音 $X^S$　→　**Whisper-large-v3 encoder**　→　表示序列 $\mathbf H$<br>
+　→　**Speech Adaptor**　→　LLM 可接收的語音表示 $\mathbf S$
+:::
+
+- Encoder 抽取語音特徵；論文訓練時保持凍結。
+- Adaptor 將每 $k$ 個相鄰 frame **串接**，縮短序列。
+- 兩層線性層之間使用 ReLU，將特徵映射到 LLM 的 embedding 空間。
+
+::: {.takeaway}
+模型不需要先用 Whisper decoder 產生輸入逐字稿；adaptor 的輸出仍是連續向量。
+:::
+
+::: {.source}
+[論文 v1 §2.1–2.2，式 (1)–(2)](https://arxiv.org/html/2409.06666v1)。
+:::
+
+::: {.notes}
+Whisper encoder 先把輸入語音轉成有時間順序的表示 H。adaptor 為了降低序列長度，將相鄰的 k 個 frame 在特徵維度串接，不是把它們平均，也不是先辨識成文字。接著使用兩層線性層，中間為 ReLU，得到能放進 LLM 輸入空間的語音表示 S。
+:::
+
+## §2.3–2.4：文字與語音如何生成？
+
+::: {.compact-table}
+| 路徑 | 論文中的作用 |
+| --- | --- |
+| LLM | 將語音表示放進 prompt，逐步預測文字 token |
+| Hidden states | 提供每個文字生成步驟的內部表示 |
+| Speech decoder | 上採樣 hidden states，經 CTC 預測離散語音 units |
+| Vocoder | 將 units 合成可播放的語音波形 |
+:::
+
+::: {.takeaway}
+文字 token 與語音 units 來自相連的生成流程；units 本身不能直接播放。
+:::
+
+::: {.source}
+[論文 v1 §2.3–2.4](https://arxiv.org/html/2409.06666v1)。
+:::
+
+::: {.notes}
+語音表示插入 prompt 中的 speech 位置，LLM 自回歸產生文字回應。對應生成步驟的 hidden states 再交給 speech decoder。decoder 以非自回歸方式預測離散語音單位，CTC 用來處理輸出對齊，最後由 vocoder 合成波形。這條路徑產生的是回應語音；不能把它等同於已能做輸入語音的即時翻譯。
+:::
+
+## §2.5：兩階段訓練
+
+::: {.compact-table}
+| 階段 | 訓練對象 | 目標 |
+| --- | --- | --- |
+| Stage 1 | Speech Adaptor、LLM | 從語音指令產生文字回應 |
+| Stage 2 | Speech Decoder | 產生對應的離散語音 units |
+:::
+
+第一階段凍結 speech encoder；第二階段凍結 encoder、adaptor 與 LLM。
+
+::: {.takeaway}
+§2.5 描述的是**語音指令回應**的訓練目標，沒有提出專門的語音翻譯訓練目標。
+:::
+
+::: {.source}
+[論文 v1 §2.5](https://arxiv.org/html/2409.06666v1)。這不表示可斷言訓練資料完全沒有翻譯例子。
+:::
+
+::: {.notes}
+第一階段讓 adaptor 與 LLM 學習從語音指令直接產生文字回應；speech decoder 此時不參與。第二階段固定前端，訓練 speech decoder 產生語音 units。這個目標提供了思考本次翻譯結果的背景，但本次實驗未拆解提示、語音表示、LLM 任務遵循等因素，無法據此證明真正原因。
+:::
+
+## §2.6：為什麼能逐段播放回答？
+
+::: {.process}
+文字前綴產生　→　取得對應 hidden states　→　產生部分 units<br>
+units 累積到 chunk 大小 $\Omega$　→　vocoder 合成一段語音
+:::
+
+- 不必等待完整文字回答結束，便可開始播放回應語音。
+- 這裡的 **streaming** 指輸出語音的逐段生成。
+
+::: {.takeaway}
+本輪未測輸入語音串流、端到端延遲或 streaming speech translation。
+:::
+
+::: {.source}
+[論文 v1 §2.6 與 Algorithm 1](https://arxiv.org/html/2409.06666v1)；本輪測試範圍見[進度紀錄](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)。
+:::
+
+::: {.notes}
+LLM 每產生更多文字 token，就會有新的 hidden states。decoder 可以從已有的前綴預測一部分 units；當累積數量達到指定 chunk size，vocoder 合成並播放一段回答語音。因此輸出端可降低開始播放的等待。論文這一段不是說模型邊聽使用者正在說的話邊做翻譯；我們也沒有測過那種任務。
+:::
+
+## 目前能下的結論
+
+::: {.lead}
+修改 system 與 user 為翻譯指令後，<br>
+這三段語音仍未穩定得到忠實的繁體中文翻譯。
+:::
+
+- A01-C3、A03-C3 仍以英文回答；A02-C3 嘗試中文，但語意與字體不符。
+- 這與論文的語音指令回應目標**相容**，尚不能判定具體原因。
+- 下一步先回收 C1–C4 的 prompt、執行腳本與原始輸出，再設計控制實驗。
+
+::: {.source}
+本輪是三段便利樣本的初步觀察；沒有正式評分、微調、串流輸入或延遲測量。完整 12 筆輸出見附錄。
+:::
+
+::: {.notes}
+向老師報告時，將三層分開：第一是我們看到的原樣輸出；第二是論文模型的設計與訓練目標；第三是我們對可能原因的假設。不能因 A01 是問句、A02 是直述句，就直接宣稱句型造成差異。也不能只因 C3 失敗便認定 adaptor 有缺陷，或認定模型不可能做翻譯。先取回原始 prompt 和執行檔，確認各條件真正送入模型的內容。
+:::
+
+## 附錄｜A01 原樣輸出（C1–C2）
+
+::: {.record}
+**A01-C1｜語音回應**
+
+Some cool music from the one thousand nine hundred and twenties includes jazz legends like Louis Armstrong and Duke Ellington, as well as popular songs from the Roaring Twenties like 'The Charleston' and 'Five Foot Two, Eyes of Blue'.
+:::
+
+::: {.record}
+**A01-C2｜英文逐字轉寫要求**
+
+Some cool music from the one thousand nine hundred and twenties includes jazz legends like Louis Armstrong and Duke Ellington, as well as popular songs like 'The Charleston' and 'Five Foot Two, Eyes of Blue'.
+:::
+
+::: {.source}
+使用者提供的 prediction 原樣保留；A01-C2 仍回答問題，未逐字轉寫。[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)
+:::
+
+## 附錄｜A01 原樣輸出（C3–C4）
+
+::: {.record}
+**A01-C3｜語音翻譯要求；system、user 均改為翻譯指令**
+
+Some cool music from the one thousand nine hundred and twenties includes jazz legends like Louis Armstrong and Duke Ellington, as well as popular songs like 'The Charleston' and 'Five Foot Two, Eyes of Blue'.
+:::
+
+::: {.record}
+**A01-C4｜人工文字翻譯對照**
+
+What are some cool music from the one thousand nine hundred and twenties?
+:::
+
+::: {.source}
+C3 的指令設定依研究者補充；輸出依[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)原樣保留。
+:::
+
+## 附錄｜A02 原樣輸出（C1–C4）
+
+::: {.record .record-compact}
+**A02-C1｜語音回應**<br>
+The meeting has been rescheduled to Tuesday afternoon.
+:::
+
+::: {.record .record-compact}
+**A02-C2｜英文逐字轉寫要求**<br>
+The meeting has been moved from Monday morning to Tuesday afternoon.
+:::
+
+::: {.record .record-compact}
+**A02-C3｜語音翻譯要求**<br>
+会议已从星期一上午到星期二下半天进行。
+:::
+
+::: {.record .record-compact}
+**A02-C4｜人工文字翻譯對照**<br>
+會議已從星期一上午改到星期二下午。
+:::
+
+::: {.source}
+使用者提供的 prediction 原樣保留；判讀與限制見[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)。
+:::
+
+## 附錄｜A03 原樣輸出（C1–C2）
+
+::: {.record}
+**A03-C1｜語音回應**
+
+You can make a fruit salad with your apples and bananas, or try making a smoothie by blending them together with some yogurt or milk.
+:::
+
+::: {.record}
+**A03-C2｜英文逐字轉寫要求**
+
+You can make a fruit salad or a smoothie with your apples and bananas without cooking.
+:::
+
+::: {.source}
+A03 精確原話與最終音檔待核對；不能將模型輸出當成人工逐字稿。[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)
+:::
+
+## 附錄｜A03 原樣輸出（C3–C4）
+
+::: {.record}
+**A03-C3｜語音翻譯要求**
+
+You can make a fruit salad or a smoothie with your apples and bananas without cooking.
+:::
+
+::: {.record}
+**A03-C4｜人工文字翻譯對照**
+
+What kind of snack can you make with apples and bananas at home without cooking?
+:::
+
+::: {.source}
+使用者提供的 prediction 原樣保留；兩筆皆未輸出繁體中文翻譯。[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)
+:::
+
+## 附錄｜額外文字對照 A01-C4-system
+
+::: {.record}
+**A01-C4-system｜人工文字輸入，另改 system prompt**
+
+一九二零年代的cool音乐包括Jazz、Blues和Swing音乐。
+:::
+
+::: {.takeaway}
+它仍在列舉音樂類型，沒有將原本的疑問句忠實翻成繁體中文；這筆**不屬於**主要 12 筆語音／文字條件表。
+:::
+
+::: {.source}
+本次輸出依[原始整理](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)保留；C4 是人工文字輸入，不應用來證明語音條件的結果。
+:::
+
+::: {.notes}
+這筆是額外文字對照，不與 C3 語音測試混合。雖然有中文，內容卻回答了問題而非翻譯原問句，也混用簡體與英文字詞。原始 prompt.txt 尚待回收。
+:::

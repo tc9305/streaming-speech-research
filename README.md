@@ -14,7 +14,7 @@
 
 | 研究者 | 研究原稿 | 給老師的網頁／簡報 |
 | --- | --- | --- |
-| Chiang | [Chiang/](Chiang/README.md) | [LLaMA-Omni 進度](docs/Chiang/SpeechLLM/index.html) |
+| Chiang | [Chiang/](Chiang/README.md) | [LLaMA-Omni 進度](Chiang/SpeechLLM/index.html) |
 | Liu | [Liu/](Liu/README.md) | [Nemotron 3.5 Streaming ASR](docs/Liu/report.html) |
 | Chiu | [chiu/](chiu/README.md) | [SeamlessStreaming / EMMA](docs/chiu/seamless_streaming_progress.html) |
 
@@ -42,14 +42,13 @@ chiu/               # Chiu 的 Quarto 原稿、圖解與本機簡報
 notes/              # 跨主題共用筆記原稿
 docs/               # GitHub Pages 網站：手寫入口與發布產物
 scripts/            # 共用產生／發布腳本
-SpeechLLM/          # 舊路徑導引；研究內容已移到 Chiang
 ```
 
 ## 預覽與發布
 
 首頁為 `docs/index.html`。`docs` 是網站發布根目錄，不是另一套研究筆記；`notes` 是共用筆記原稿。來源和網頁版呈現相同內容是正常的，請更新原稿後再產生網頁，避免兩份各自修改。完整盤點與維護對照見 [架構與重複內容檢查](notes/repository-structure.md)。
 
-首頁、StreamST 入口與 Chiang 的 SpeechLLM 報告目前是手寫 HTML；其餘簡報／術語網頁為產生或同步的發布版本。可直接用瀏覽器開啟 `docs/index.html`。
+首頁、StreamST 入口與 Chiang 的 SpeechLLM 報告目前是手寫 HTML；其餘簡報／術語網頁為產生或同步的發布版本。Chiang 的網頁和簡報現僅存於 `Chiang/SpeechLLM/`，可用 Live Server 從該目錄預覽。
 
 安裝 Quarto 後，在 repo 根目錄執行：
 
@@ -59,7 +58,7 @@ quarto preview index.qmd
 quarto render
 ```
 
-SimulST 簡報輸出至根目錄 `docs/SimulST/index.html`。修改首頁或手寫報告時，直接編輯對應 HTML；Chiang 的網頁報告位於 `docs/Chiang/SpeechLLM/index.html`，目前仍需與 Markdown 原稿同步維護。
+SimulST 簡報輸出至根目錄 `docs/SimulST/index.html`。修改首頁或手寫報告時，直接編輯對應 HTML；Chiang 的網頁報告位於 `Chiang/SpeechLLM/index.html`，目前仍需與 Markdown 原稿同步維護。
 
 Liu、Chiu 的簡報先在各自資料夾依 README 執行 Quarto 渲染，再回到 repo 根目錄同步現有 HTML 至網站（PowerShell）：
 
@@ -71,7 +70,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync_reports.ps1
 
 共用術語頁由 `notes/terminology.md` 產生。在 repo 根目錄執行 `python scripts/build_terminology.py`（需 Python 與 Quarto），再將 Markdown 原稿與 `docs/notes/terminology.html` 一起提交。
 
-GitHub Pages 設定：Settings → Pages → Deploy from a branch → main → /docs → Save。將來源與更新的 `docs/` 一起 commit / push，即可發布。
+GitHub Pages 設定：Settings → Pages → Deploy from a branch → main → /docs → Save。將來源與更新的 `docs/` 一起 commit / push，即可發布 `docs/` 內的網站；Chiang 的報告與簡報現在只放在 `Chiang/`，因此不會出現在這個 Pages 網站上。
 
 ## 一起研究
 
