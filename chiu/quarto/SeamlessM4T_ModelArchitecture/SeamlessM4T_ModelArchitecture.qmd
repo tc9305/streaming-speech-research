@@ -1,6 +1,6 @@
 ---
 title: 'SeamlessM4T<br>Model Architecture'
-subtitle: '從 UnitY2 翻譯骨幹到 SeamlessExpressive 雙路徑控制'
+subtitle: '從 Seamless 整合架構到 UnitY2 與表現力控制'
 author: '柏緯 · Speech Lab'
 date: '2026-10-15'
 date-format: 'YYYY-MM-DD'
@@ -17,11 +17,11 @@ date-format: 'YYYY-MM-DD'
 - **關鍵機制**：T2U 如何靠 duration 預測，把文字長度展開成語音長度？
 
 ::: {.source}
-內容主線：使用者提供的 SeamlessM4T_for_codex.rtf 與兩張 SeamlessExpressive 架構截圖。
+內容主線：使用者提供的 RTF、Expressive 與 UnitY2 截圖，以及 Seamless 整合架構圖。
 :::
 
 ::: {.notes}
-這次聚焦模型架構，不呈現先前 chunk 實驗數據。先從使用者提供的高階圖說明兩條路徑，再拆解藍色區塊中的 UnitY2。最後回到 duration 與表現力條件如何影響生成。兩張圖片呈現相同的高階架構，第二張另外附有官方風格轉移說明。
+這次聚焦模型架構，不呈現先前 chunk 實驗數據。先看 Seamless 如何整合串流翻譯與表現力合成，再看離線 SeamlessExpressive 的雙路徑控制，最後拆解 UnitY2、T2U 與 duration。整合高階圖使用與本次附圖相同內容的 Meta 官方原始圖檔；另兩張圖保留使用者提供的 Expressive 與 UnitY2 論文截圖。
 :::
 
 ## Seamless AI 家族：三個技術支柱
@@ -36,7 +36,7 @@ date-format: 'YYYY-MM-DD'
 :::
 
 ::: {.takeaway}
-先理解 M4T v2 的語意與單元生成，再看 Expressive 與 Streaming 的擴展。
+先看 Seamless 的整合全貌，再拆解 Expressive 與 M4T v2／UnitY2。
 :::
 
 ::: {.source}
@@ -71,7 +71,45 @@ date-format: 'YYYY-MM-DD'
 S 代表 speech，T 代表 text。例子：中文語音翻成英文字幕是 S2TT；若還要英文語音，才需要走後面的 T2U 與合成路徑。這張表整理任務類型，並不表示每個任務都支援完全相同的語言集合。
 :::
 
-## SeamlessExpressive：先看完整高階圖
+## Seamless：串流翻譯與表現力合成
+
+![](assets/seamless-unified-official.jpg){.diagram .diagram-tall alt="Meta 官方 Seamless 整合架構圖：來源 partial speech 進入 Streaming-UnitY2，經 speech encoder、搭配 EMMA 的 simultaneous text decoder、T2U encoder 與 NAR T2U decoder，輸出 partial non-reduced units；來源語音另經 expressivity encoder，與 units 共同條件化 expressive speech generator，產生目標語言語音。"}
+
+::: {.takeaway}
+**Streaming-UnitY2** 決定翻譯內容與輸出時機；**expressive generator** 加入來源聲音風格。
+:::
+
+::: {.source}
+圖片：[Meta 官方技術介紹 · Seamless](https://ai.meta.com/resources/models-and-libraries/seamless-communication-models/)，與本次附圖內容相同；直接使用官方原圖。
+:::
+
+::: {.notes}
+這張圖是整合模型 Seamless，不是單獨的 SeamlessExpressive，也不是只做串流翻譯的 SeamlessStreaming。先沿藍色路徑讀：Partial speech 是目前已接收的部分來源語音，speech encoder 編碼後，simultaneous text decoder 透過 EMMA 在可用上下文下決定何時生成目標文字，T2U 再產生部分非去重單元。右側 PRETSSEL 類型的 expressive generator 同時接收 units 與從部分來源語音取得的表現力條件。注意：這張整合圖只有來源語音到右側 expressivity encoder 的上方路徑；下一張 Expressive 架構則額外呈現 T2U 的表現力條件路徑。不要把下一張圖的所有條件連線直接套回整合模型。論文 §6 說明整合版主要保留句子層級的語調、情緒表達與聲音風格，而未提供離線 Expressive 全套的片語層級語速與停頓保留。
+:::
+
+## 串流推論：輸入、讀寫決策與輸出
+
+::: {.small-table}
+| 階段 | 架構說明 |
+|---|---|
+| **輸入：Partial speech** | 逐步接收音訊，保留已取得的上下文，不需等整句結束。 |
+| **核心：Streaming-UnitY2＋EMMA** | 同步文字解碼器依上下文決定 **READ**（繼續聽）或 **WRITE**（產生翻譯）；T2U 接續生成 units。 |
+| **輸出：表現力語音合成** | 以生成的 units 與目前可用來源語音為條件，逐段合成目標語音，保留語調、情緒表達與聲音風格。 |
+:::
+
+::: {.takeaway}
+官方以「**約 2 秒延遲**」概述 SeamlessStreaming；實際結果隨語言、策略與延遲指標而變化。<br>部分語音可提供風格條件，但短上下文仍會影響保留品質。
+:::
+
+::: {.source}
+來源：[Meta：Streaming 與 EMMA](https://ai.meta.com/blog/seamless-communication/)；[論文 §6、§6.2.3](https://arxiv.org/pdf/2312.05187#page=52)。非本機延遲或情緒保留實測。
+:::
+
+::: {.notes}
+使用者的三段式說明適合做這張圖的講解，但需界定範圍。第一，Partial speech 不等於每塊獨立呼叫離線模型；串流系統保留已接收上下文，並在資訊足夠時輸出。第二，EMMA 是 Efficient Monotonic Multihead Attention，是同步文字解碼中的核心機制，不能把所有後端合成與播放排程都歸給 EMMA。第三，Meta 的約兩秒是研究結果概述，不是每個語言方向、硬體或每個 chunk 都固定兩秒，更不等於 chunk size、首次輸出時間或整段推論耗時。論文區分文字 Average Lagging 與語音 Ending Offset 等指標；若報數值，必須附模型版本、資料集、語言方向、決策閾值與指標。第四，PRETSSEL 可從部分來源語音取得表現力條件，但不能宣稱任意短片段都足以完整還原音色與情緒；論文 §6.2.3 指出部分上下文造成 vocal style similarity 與 AutoPCP 下降。下一頁轉看離線 Expressive，理解其更完整的韻律控制路徑。
+:::
+
+## SeamlessExpressive：離線表現力控制
 
 ![](assets/seamless-expressive-original.png){.diagram .diagram-tall alt="SeamlessExpressive 雙路徑高階圖：藍色翻譯主幹生成 units，黃色表現力分支引導 T2U，紫色生成器另外從來源語音取得表現力條件並合成目標語音。"}
 
@@ -84,7 +122,7 @@ S 代表 speech，T 代表 text。例子：中文語音翻成英文字幕是 S2T
 :::
 
 ::: {.notes}
-先沿水平箭頭讀：來源語音進入 speech encoder、text decoder、T2U encoder 與 NAR T2U decoder，再把 non-reduced units 交給右側生成器。接著讀上方兩條分支：來源語音提供表現力條件給單元生成，也提供條件給最終語音生成。圖中兩個 Expressivity encoder 標籤對應兩個使用位置，不能只靠高階圖判定為兩套完全獨立訓練的模型。
+此頁轉入離線 SeamlessExpressive；與前面的 Seamless 整合圖區分。先沿水平箭頭讀：來源語音進入 speech encoder、text decoder、T2U encoder 與 NAR T2U decoder，再把 non-reduced units 交給右側生成器。接著讀上方兩條分支：來源語音提供表現力條件給單元生成，也提供條件給最終語音生成。圖中兩個 Expressivity encoder 標籤對應兩個使用位置，不能只靠高階圖判定為兩套完全獨立訓練的模型。
 :::
 
 ## 雙路徑控制：語意與表現力在哪裡會合？
@@ -302,6 +340,7 @@ Expressive 更換基礎模型的 **unit-to-speech 流程**；PRETSSEL 內部仍�
 - **M4T v2／UnitY2**：多模態輸入 → 目標文字 → units → 語音。
 - **T2U**：階層式上採樣＋duration predictor＋NAR unit decoder。
 - **Expressive**：把表現力條件帶入 unit 與聲學生成。
+- **Seamless 整合版**：串流讀寫決策＋部分語音條件下的表現力合成。
 
 ::: {.closing}
 Q&A：如果譯文正確，但語速與停頓不自然，應先檢查哪一段？
@@ -317,8 +356,8 @@ Q&A：如果譯文正確，但語速與停頓不自然，應先檢查哪一段�
 | 資料 | 本簡報的用途 |
 |---|---|
 | **SeamlessM4T_for_codex.rtf** | 五段大綱、模型元件與講稿素材；文字備份見 `sources/` |
-| **使用者提供的原始截圖** | Expressive 高階原圖與 UnitY2 論文 Figure 3 原圖；以 PNG 完整保留 |
-| **[Seamless 論文](https://arxiv.org/abs/2312.05187)** | §3.3／Fig. 3：UnitY2；§4.2：Expressive 與 PRETSSEL |
+| **截圖與官方架構圖** | Expressive、UnitY2 原始截圖；Seamless 整合圖採用 Meta 官方原檔 |
+| **[Seamless 論文](https://arxiv.org/abs/2312.05187)** | §3.3：UnitY2；§4.2：Expressive；§6：Seamless 整合版 |
 | **[Meta 官方模型庫](https://github.com/facebookresearch/seamless_communication)** | 模型家族、任務與開源組件 |
 | **[Transformers 官方文件](https://huggingface.co/docs/transformers/model_doc/seamless_m4t_v2)** | v2 生成流程與 NAR T2U 架構 |
 :::
@@ -328,5 +367,5 @@ Q&A：如果譯文正確，但語速與停頓不自然，應先檢查哪一段�
 :::
 
 ::: {.notes}
-本簡報以使用者文件為主線，修正「雙向注入」「完全取代 HiFi-GAN」「準確預測時長」「聲音複製」等可能過度延伸的表述。架構 SVG 是依提供的圖片與文字資料自行重繪的教學示意，不是論文原圖。未新增 benchmark、參數量、語言數或實測速度。原始第一張 Expressive 截圖與第二張 UnitY2 論文截圖已複製至 assets/ 並直接用於簡報，未裁切或重新繪製。其餘 SVG 作為簡化閱讀指引。
+本簡報以使用者文件為主線，新增 Seamless 整合架構與串流說明，並修正「雙向注入」「完全取代 HiFi-GAN」「準確預測時長」「聲音複製」等可能過度延伸的表述。架構 SVG 是依提供的圖片與文字資料自行重繪的教學示意，不是論文原圖。約兩秒延遲為官方研究概述，未作為本機實測；未新增模型 benchmark 或情緒保留實驗。原始第一張 Expressive 截圖與第二張 UnitY2 論文截圖已複製至 assets/ 並直接用於簡報，未裁切或重新繪製。其餘 SVG 作為簡化閱讀指引。
 :::

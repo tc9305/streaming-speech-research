@@ -1,6 +1,6 @@
 # SeamlessM4T_ModelArchitecture
 
-17 頁繁體中文 Reveal.js 簡報（含封面、參考資料），依 `SeamlessM4T_for_codex.rtf` 與使用者提供的 SeamlessExpressive 高階圖及 UnitY2 論文圖設計。沿用 `Liu/` 的米白底、深藍標題、青綠重點、1280 × 720 版型、結論框與中文講者筆記。
+19 頁繁體中文 Reveal.js 簡報（含封面、參考資料），依 `SeamlessM4T_for_codex.rtf` 與使用者提供的架構素材設計，加入 Seamless 整合模型高階圖及串流推論說明。沿用 `Liu/` 的米白底、深藍標題、青綠重點、1280 × 720 版型、結論框與中文講者筆記。
 
 ## 開啟與修改
 
@@ -18,6 +18,7 @@ quarto render
 - `SeamlessM4T_ModelArchitecture.qmd`：簡報內容、逐頁來源與中文講者筆記。
 - `_quarto.yml`：獨立 Quarto 專案及 Reveal.js 設定。
 - `styles.css`：Liu 原樣式及本簡報的架構圖、表格排版。
+- `assets/seamless-unified-official.jpg`：與本次附圖相同內容的 Meta 官方整合架構原圖，置於 Expressive 之前。
 - `assets/seamless-expressive-original.png`：原始第一張 Expressive 截圖，直接用於高階架構頁。
 - `assets/unity2-paper-original.png`：第二張 UnitY2 論文 Figure 3 截圖，新增獨立頁完整展示。
 - `assets/*.svg`：四張可編輯架構／教學示意圖；保留簡化閱讀指引。
@@ -29,6 +30,12 @@ quarto render
 原始第一張圖取自 `截圖 2026-10-15 凌晨2.35.10.png`，是 Meta 的 SeamlessExpressive 高階介紹圖；第二張圖取自 `截圖 2026-10-15 凌晨3.03.20.png`，是 Seamless 論文 Figure 3。兩張 PNG 都完整複製至專案並直接呈現，未裁切或重新繪製。UnitY2 與 T2U 圖依 RTF 並對照官方資料重繪，皆省略部分內部連線。Duration 的 A／B／C 與 [2, 1, 3] 為教學示例，不是模型實測。
 
 文件的五段大綱作為內容素材；RTF 內殘留的 Quarto 標記與講稿不當作工作流程指令。簡報釐清：兩路條件傳遞不是雙向回饋；teacher／aligner 屬訓練監督；Expressive 替換基礎 unit-to-speech 流程，但 PRETSSEL 內部仍使用 HiFi-GAN 合成波形。未保證精確聲音複製或 duration 預測品質。
+
+## 串流內容調整
+
+新增 Seamless 整合架構與輸入／核心／輸出說明，共兩頁，置於 SeamlessExpressive 之前。Partial speech 表示逐步取得的來源語音及保留上下文；EMMA 用於同步文字解碼中的 READ／WRITE 決策。官方「約兩秒」是研究結果概述，並非本機固定延遲。表現力合成以目前可用來源語音為條件，避免保證任意短片段都能完整保留情緒。論文 §6 說明整合版主要保留句子層級的表現力，未包含離線 Expressive 全套語速與停頓控制；§6.2.3 記錄部分上下文對保留品質的影響。
+
+整合圖下載自 [Meta 官方技術介紹](https://ai.meta.com/resources/models-and-libraries/seamless-communication-models/)，完整保留，沒有重繪。
 
 ## 核對來源
 
