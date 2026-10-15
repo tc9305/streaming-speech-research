@@ -1,0 +1,36 @@
+---
+title: 'In-Depth Research<br>Questions and Challenges'
+subtitle: 'SimulST Research Challenges and Maturity'
+author: 'Nick · Speech Lab'
+date: '2026-10-15'
+date-format: 'YYYY-MM-DD'
+lang: en
+format:
+  revealjs:
+    theme: simple
+    css: [styles.css, report02.css]
+    title-slide: true
+    width: 1280
+    height: 720
+    margin: 0.06
+    center: false
+    slide-level: 2
+    slide-number: c/t
+    transition: fade
+    controls: true
+    progress: true
+    hash: true
+    history: true
+    navigation-mode: linear
+    embed-resources: true
+    preview-links: false
+    footer: 'SimulST · Research Challenges and Maturity'
+---
+
+## SimulST Maturity Landscape {#maturity-landscape .image-slide}
+
+![](SimulST%20成熟度全景圖.png){.report02-image alt="SimulST Maturity Landscape"}
+
+## SimulST Research Challenges Mind Map {#research-challenges .image-slide}
+
+![](SimulST%20研究挑戰心智圖.png){.report02-image alt="SimulST Research Challenges Mind Map"}

@@ -1,0 +1,4 @@
+/* Full images retain their original aspect ratio and all annotations. */
+.reveal .image-slide h2{margin-bottom:18px}
+.reveal .report02-image{display:block;width:100%;height:610px;max-width:100%;max-height:none;object-fit:contain;margin:0 auto;border:0;box-shadow:none}
+.reveal .image-slide p,.reveal .image-slide figure{margin:0}
