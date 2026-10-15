@@ -1,0 +1,61 @@
+簡報大綱
+Seamless AI 家族概觀
+高階架構：SeamlessExpressive 雙軌控制機制
+底層神經網路：SeamlessM4T v2 (UnitY2) 細節
+關鍵組件：T2U (Text-to-Unit) 與 Duration 預測
+報告總結與 Q&A
+1. Seamless AI 家族概觀
+Meta Seamless 核心目標：實現多語言、低延遲且具備說話者情感與韻律的實時語音翻譯。
+三大技術支柱：
+SeamlessM4T v2：多任務基礎骨幹（S2TT, S2ST, T2TT, T2ST, ASR）。
+SeamlessExpressive：跨語言的語調、節奏與表達力轉移（Cross-lingual Prosody & Vocal Style Transfer）。
+SeamlessStreaming：基於 Streaming Policy 的低延遲實時翻譯。
+2. 高階架構：SeamlessExpressive
+核心設計理念
+雙軌機制（Dual-path Architecture）
+翻譯主幹（藍區）：基於 SeamlessM4T v2 進行語意轉換與 Unit 生成。
+表現力擷取（黃區）：Expressivity Encoder 從原始語音中獨立擷取語速、節奏與聲調。
+條件調製與生成（紫區）
+Expressivity 訊號雙向注入：
+指導 NAR T2U Decoder 生成符合目標節奏的 Unit。
+傳遞給 Expressive Speech Generator 取代傳統 HiFi-GAN Vocoder。 :::
+
+::: {.notes} 講稿備忘： 教授，這張圖展示了 SeamlessExpressive 如何在翻譯中保留說話者的情感。 左藍色區塊是 SeamlessM4T v2 主幹，負責語意翻譯；上方黃色的 Expressivity Encoder 則是從原始語音提取韻律特徵，並輸入到右側的 Expressive Speech Generator，取代了傳統的 Vocoder，最終合成出具備原聲音色的目標語言語音。 
+3. 底層架構：SeamlessM4T v2 神經網路細節
+Backbone: UnitY2 / Multitask-UnitY2
+前端語音編碼器 (Audio Front-end)
+Input: 80-bin Mel-Filterbanks
+Encoder: w2v-BERT 2.0 (Conformer) 提取深度語音特徵。
+Length Adaptor: 調整時間解析度以對齊文本表徵。
+文本編碼與解碼器
+基於 NLLB (No Language Left Behind) 的 Transformer Text Encoder / Decoder，產出文字翻譯 $y^{\text{text}}(\ell_t)$。 
+::: {.notes} 講稿備忘： 這張圖是 SeamlessM4T v2 的完整模型架構。 在語音輸入端，採用了 80-bin Mel-Filterbanks 並結合 Conformer 結構的 w2v-BERT 2.0 作為 Speech Encoder。 中間採用了基於 NLLB 的 Transformer 進行文字解碼，產出目標文本。 :::
+4. 關鍵解碼管線：T2U 與 Duration 預測
+T2U (Text-to-Unit) 生成機制
+階層式上採樣 (Hierarchical Upsampling)
+subword-length T2U encoder $\rightarrow$ subword-to-character upsampler
+長度預測 (Unit Duration Predictor)
+預測每個 Character 應對應的語音單元長度。
+非自迴歸解碼 (NAR Unit Decoder)
+快速生成未壓縮的單元序列 $u^{\text{dup}}$。
+訓練期監督 (Training Supervision)
+利用右側 Pseudo-labeling teacher T2U 與 Aligner 提供顯式 Duration 監督。 :::
+:::
+::: {.notes} 講稿備忘： 這張圖的右半部是 T2U 管線。為了將文字轉為語音單元，模型進行了階層式的上採樣。 特別的是它包含一個 Unit Duration Predictor，能準確預測聲音長度，最後經由 NAR Unit Decoder 輸出重複單元序列，並由 Vocoder 轉為波形。右極端展示了訓練期利用 Teacher 模型進行 Duration 監督的對齊機制。 :::
+5. 總結與架構差異對比 
+比較項目
+SeamlessM4T v2 (基礎模型)
+SeamlessExpressive (表現力擴展)
+主要目標
+高精準度的多語言語音/文本翻譯
+保留原始說話者的音色、語調與情緒
+聲碼器 (Vocoder)
+標準 HiFi-GAN unit-vocoder
+Expressive Speech Generator
+韻律控制
+無顯式情感/節奏控制機制
+具備獨立的 Expressivity Encoder 雙向調製
+核心優勢
+語意翻譯品質高、涵蓋語言廣
+實現自然的跨語言「聲音複製與情緒轉移」
+

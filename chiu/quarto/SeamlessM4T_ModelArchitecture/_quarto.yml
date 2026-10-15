@@ -1,0 +1,27 @@
+project:
+  type: default
+  render:
+    - SeamlessM4T_ModelArchitecture.qmd
+  post-render:
+    - python3 scripts/fix_slide_preview.py
+lang: zh-TW
+format:
+  revealjs:
+    theme: simple
+    css: styles.css
+    width: 1280
+    height: 720
+    margin: 0.06
+    center: false
+    slide-level: 2
+    slide-number: c/t
+    transition: fade
+    controls: true
+    progress: true
+    hash: true
+    history: true
+    navigation-mode: linear
+    embed-resources: true
+    html-math-method: mathml
+    preview-links: false
+    footer: 'SeamlessM4T · Model Architecture'

@@ -21,3 +21,9 @@ quarto render seamless_streaming_progress.qmd
 左右方向鍵換頁，`Esc` 看總覽，`F` 全螢幕，`S` 開啟講者模式。附錄保留原始截圖與程式呼叫。渲染後套用 SimulST 共用的 Live Server 講者 HTML 修正。
 
 數據沿用原簡報，未重新執行實驗。CER / WER 的比較對象為 offline 模型輸出；0.54 秒為快速餵入時的程式耗時，1.92 秒為第一次 WRITE 的來源音訊位置。
+
+## Quarto 專案資料夾
+
+新增的獨立簡報集中於 [`quarto/`](quarto/README.md)。
+
+- [SeamlessM4T_ModelArchitecture](quarto/SeamlessM4T_ModelArchitecture/README.md)：UnitY2、T2U／Duration 與 SeamlessExpressive 架構簡報。
