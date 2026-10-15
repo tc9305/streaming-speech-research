@@ -1,5 +1,5 @@
 ---
-title: 'In-Depth Research<br>Questions and Challenges'
+title: 'Deep Research<br>Questions and Challenges'
 subtitle: 'SimulST Research Challenges and Maturity'
 author: 'Nick · Speech Lab'
 date: '2026-10-15'
