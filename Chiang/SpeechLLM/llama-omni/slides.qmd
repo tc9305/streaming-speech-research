@@ -1,6 +1,6 @@
 ---
-title: "LLaMA-Omni：從初步測試回到模型架構"
-subtitle: "語音指令回應、翻譯嘗試與論文 §2.1–2.6"
+title: "LLaMA-Omni：從初步測試回到論文"
+subtitle: "語音指令回應、翻譯嘗試與論文 §2–6"
 author: "Chiang｜Speech LLM 研究進度"
 date: "2026-10-15"
 lang: zh-TW
@@ -31,14 +31,14 @@ format:
 
 - 先看自己做的三段音訊、四種條件測試。
 - 再回到論文，理解模型如何處理輸入及生成回應。
-- 論文導讀止於 **§2.6 Inference**。
+- 論文導讀涵蓋 **§2–6**：架構、資料、實驗、相關工作與結論。
 
 ::: {.source}
-本次實驗依[既有報告](../index.html)及研究者補充整理；論文為 [Fang et al., LLaMA-Omni, arXiv v1](https://arxiv.org/pdf/2409.06666v1)。
+本次實驗依[既有報告](../index.html)及研究者補充整理；方法說明依 [Fang et al., LLaMA-Omni, arXiv v2](https://arxiv.org/pdf/2409.06666v2)。
 :::
 
 ::: {.notes}
-這份報告是研究進度，不是完成的論文複現。先由實際輸出提出問題，再用讀到的架構與訓練方式建立理解。§3 資料建構及後面的論文實驗不在這次導讀範圍內。
+這份報告是研究進度，不是完成的論文複現。先由實際輸出提出問題，再依序讀論文架構、資料建構、實驗、相關工作與結論。區分論文報告的結果與本次三段音訊的初步觀察。
 :::
 
 ## 「回答」與「翻譯」是不同任務
@@ -121,7 +121,7 @@ A01-C3 的原樣輸出完整列在附錄。它以英文回答問題，即使研�
 :::
 
 ::: {.source}
-[論文 v1 Figure 3](https://arxiv.org/html/2409.06666v1)；本次 C3 修改依研究者補充，精確字句待原始紀錄核對。
+[論文 v2 Figure 3](https://arxiv.org/html/2409.06666v2)；本次 C3 修改依研究者補充，精確字句待原始紀錄核對。
 :::
 
 ::: {.notes}
@@ -133,102 +133,406 @@ A01-C3 的原樣輸出完整列在附錄。它以英文回答問題，即使研�
 ![](assets/llama-omni-architecture.png){.architecture fig-alt="LLaMA-Omni 架構：語音輸入經 Speech Encoder、Speech Adaptor、Large Language Model，文字與語音同時生成；右側為兩階段訓練。"}
 
 ::: {.source}
-架構圖為研究者提供的版本；模組與兩階段訓練對照[論文 v1 §2 與 Figure 2](https://arxiv.org/html/2409.06666v1)。
+架構圖為研究者提供的版本；模組與兩階段訓練對照[論文 v2 §2 與 Figure 2](https://arxiv.org/html/2409.06666v2)。
 :::
 
 ::: {.notes}
 先看左下角的輸入語音，經 encoder 和 adaptor 到 LLM。LLM 一邊逐步生成文字，一邊將 hidden states 交給 speech decoder；decoder 產生 units，vocoder 再產生可播放的波形。右側說明兩階段訓練。此圖是資料流和訓練概念圖，並非每一步的實際計時圖。
 :::
 
-## §2.1–2.2：語音怎麼進入 LLM？
+## §2.1：語音特徵抽取
 
-::: {.process}
-語音 $X^S$　→　**Whisper-large-v3 encoder**　→　表示序列 $\mathbf H$<br>
-　→　**Speech Adaptor**　→　LLM 可接收的語音表示 $\mathbf S$
+::: {.method-flow}
+<span class="speech-path">輸入錄音 $X^S$（波形）</span><br>
+↓ Whisper-large-v3 encoder<br>
+<span class="speech-path">$H=[h_1,\ldots,h_N]$（連續特徵向量）</span>
 :::
 
-- Encoder 抽取語音特徵；論文訓練時保持凍結。
-- Adaptor 將每 $k$ 個相鄰 frame **串接**，縮短序列。
-- 兩層線性層之間使用 ReLU，將特徵映射到 LLM 的 embedding 空間。
+$$H=E(X^S),\qquad H=[h_1,\ldots,h_N]\in\mathbb R^{N\times d_e}$$
+
+$E$：Whisper-large-v3 的語音 encoder，將輸入波形轉成連續語音特徵。<br>
+$N$：語音特徵的時間位置數量。　$d_e$：每個特徵向量的維度。
 
 ::: {.takeaway}
-模型不需要先用 Whisper decoder 產生輸入逐字稿；adaptor 的輸出仍是連續向量。
+這裡只使用 Whisper encoder 抽取特徵，沒有先用文字 decoder 辨識逐字稿；$H$ 仍是一串連續向量。
 :::
 
 ::: {.source}
-[論文 v1 §2.1–2.2，式 (1)–(2)](https://arxiv.org/html/2409.06666v1)。
+[論文 v2 §2.1](https://arxiv.org/html/2409.06666v2)。
 :::
 
-::: {.notes}
-Whisper encoder 先把輸入語音轉成有時間順序的表示 H。adaptor 為了降低序列長度，將相鄰的 k 個 frame 在特徵維度串接，不是把它們平均，也不是先辨識成文字。接著使用兩層線性層，中間為 ReLU，得到能放進 LLM 輸入空間的語音表示 S。
+## §2.2：相鄰特徵串接與 MLP 映射
+
+<div class="adaptor-diagram">
+<div class="adaptor-lanes">
+<div class="adaptor-lane">
+<div class="adaptor-frames">[ h₁ h₂ h₃ h₄ h₅ ]</div>
+<div class="adaptor-operation">↓ 串接</div>
+<div class="adaptor-result">h′₁</div>
+<div class="adaptor-operation">↓ MLP</div>
+<div class="adaptor-result adaptor-output">s₁</div>
+</div>
+<div class="adaptor-lane">
+<div class="adaptor-frames">[ h₆ h₇ h₈ h₉ h₁₀ ]</div>
+<div class="adaptor-operation">↓ 串接</div>
+<div class="adaptor-result">h′₂</div>
+<div class="adaptor-operation">↓ MLP</div>
+<div class="adaptor-result adaptor-output">s₂</div>
+</div>
+</div>
+<div class="adaptor-shared">兩組使用同一個 MLP</div>
+</div>
+
+$$h'_i=h_{5(i-1)+1}\oplus\cdots\oplus h_{5i},\qquad s_i=W_2\operatorname{ReLU}(W_1h'_i+b_1)+b_2$$
+
+::: {.dimension-line}
+<span class="dimension-math">H: 10 × d<sub>e</sub>　→　H′: 2 × 5d<sub>e</sub>　→　S: 2 × 4096</span>
+<div class="dimension-note">4096 是 Llama-3.1-8B-Instruct 的隱藏向量維度；MLP 將每組特徵映射到這個維度。</div>
 :::
 
-## §2.3–2.4：文字與語音如何生成？
-
-::: {.compact-table}
-| 路徑 | 論文中的作用 |
-| --- | --- |
-| LLM | 將語音表示放進 prompt，逐步預測文字 token |
-| Hidden states | 提供每個文字生成步驟的內部表示 |
-| Speech decoder | 上採樣 hidden states，經 CTC 預測離散語音 units |
-| Vocoder | 將 units 合成可播放的語音波形 |
-:::
+<span class="example-label">$N=10$ 為示意；論文實際 $k=5$。</span>
 
 ::: {.takeaway}
-文字 token 與語音 units 來自相連的生成流程；units 本身不能直接播放。
+串接讓時間位置變少、每個位置的特徵變大；MLP 再把每組特徵轉成 LLM 的輸入維度。
 :::
 
 ::: {.source}
-[論文 v1 §2.3–2.4](https://arxiv.org/html/2409.06666v1)。
+[論文 v2 §2.2，式 (1)–(2)](https://arxiv.org/html/2409.06666v2)；[Meta 模型設定](https://github.com/meta-llama/llama-models/blob/main/models/sku_list.py)。H、H′、S 都是連續向量。
+:::
+
+## §2.2：兩層 MLP 如何映射語音特徵
+
+<div class="mlp-diagram">
+<div class="mlp-step"><div class="mlp-symbol">h′ᵢ</div><div class="mlp-label">串接後特徵<br>5dₑ 維</div></div>
+<div class="mlp-arrow">→</div>
+<div class="mlp-step"><div class="mlp-symbol">W₁h′ᵢ + b₁</div><div class="mlp-label">第一層線性映射</div></div>
+<div class="mlp-arrow">→</div>
+<div class="mlp-step"><div class="mlp-symbol">ReLU</div><div class="mlp-label">加入非線性</div></div>
+<div class="mlp-arrow">→</div>
+<div class="mlp-step"><div class="mlp-symbol">W₂zᵢ + b₂</div><div class="mlp-label">第二層映射</div></div>
+<div class="mlp-arrow">→</div>
+<div class="mlp-step"><div class="mlp-symbol">sᵢ</div><div class="mlp-label">LLM 輸入<br>4096 維</div></div>
+</div>
+
+$z_i=\operatorname{ReLU}(W_1h'_i+b_1),\qquad s_i=W_2z_i+b_2$
+
+- **相較單層線性映射**：ReLU 讓 adaptor 能學習非線性的特徵轉換，而單層線性映射只能表達仿射轉換。
+- **相較含 attention 的複雜模組**：這個 MLP 逐位置處理串接後的特徵，不另做跨位置的 attention 計算。
+
+::: {.takeaway}
+兩層 MLP 提供非線性映射，且不增加跨位置 attention；「去噪」與速度優勢仍需額外實驗驗證。
+:::
+
+::: {.source}
+[論文 v2 §2.2](https://arxiv.org/html/2409.06666v2)。簡單與否是依模組結構說明，不是論文的 adaptor 消融實驗結論。
 :::
 
 ::: {.notes}
-語音表示插入 prompt 中的 speech 位置，LLM 自回歸產生文字回應。對應生成步驟的 hidden states 再交給 speech decoder。decoder 以非自回歸方式預測離散語音單位，CTC 用來處理輸出對齊，最後由 vocoder 合成波形。這條路徑產生的是回應語音；不能把它等同於已能做輸入語音的即時翻譯。
+報告時可以用「先轉換，再打包」幫聽眾記住兩層結構。第一層加 ReLU 帶入非線性，第二層輸出 LLM 需要的 4096 維。不要說單層線性完全無法跨模態，也不要說 ReLU 必然去除雜音或聲調；這些效果沒有在本文單獨驗證。低延遲也來自整體架構，不能只歸因於 adaptor。
 :::
 
-## §2.5：兩階段訓練
+## §2.3：語音條件下的文字生成
 
-::: {.compact-table}
-| 階段 | 訓練對象 | 目標 |
+::: {.prompt-line}
+System：語音助理角色設定<br>
+User：<span class="speech-path">〔語音向量 $S$〕</span>＋回答指示<br>
+Assistant：開始生成回答
+:::
+
+::: {.method-flow .generation-flow}
+$P(S)$＋先前的回答 tokens $Y_{<i}^T$<br>
+↓ Llama-3.1-8B-Instruct（LLM）→ hidden state $c_i$<br>
+<span class="text-path">├→ 文字輸出層 → $y_i^T$；加入前綴，成為下一步的輸入</span><br>
+<span class="speech-path">└→ $c_i$ 上採樣後供 Speech decoder 預測語音 units</span>
+:::
+
+$$p_i=\operatorname{softmax}(W_{\mathrm{LM}}c_i+b_{\mathrm{LM}})$$
+
+::: {.symbol-key}
+$P(S)$：含語音向量 $S$ 與回答指示的 prompt。　$c_i$：根據 prompt 與先前 tokens 算出的 hidden state。<br>
+$W_{\mathrm{LM}},b_{\mathrm{LM}}$：文字輸出層參數。　$p_i$：下一個文字 token 的機率分布；$y_i^T$：選出的 token ID。
+:::
+
+::: {.takeaway}
+$c_i$ 預測出 $y_i^T$；$y_i^T$ 加入前綴供下一步使用，而語音 decoder 接收的是 $c_i$。
+:::
+
+::: {.source}
+文字輸出層公式是講解用的標準表示，非論文新增模組。[論文 v2 §2.3](https://arxiv.org/html/2409.06666v2)。
+:::
+
+::: {.notes}
+論文的文字訓練目標是各生成步驟的負對數機率總和。$P(S)$ 指包含語音向量與文字指令的 prompt；$C=[c_1,\ldots,c_M]$ 是 LLM 生成步驟的連續 hidden states。
+:::
+
+## §2.3：文字回答的訓練目標
+
+::: {.method-flow .small-flow}
+$P(S)$＋已有的回答 tokens　→　LLM 預測下一個 token　→　與資料中的正確 token 比較
+:::
+
+<div class="loss-equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="L L M loss 等於負的、從 i 等於 1 到 M、正確文字 token 條件機率的對數總和">
+<mrow><msub><mi>ℒ</mi><mtext>LLM</mtext></msub><mo>=</mo><mo>−</mo><munderover><mo movablelimits="false">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>M</mi></munderover><mi>log</mi><mi>P</mi><mo>(</mo><msubsup><mi>y</mi><mi>i</mi><mi>T</mi></msubsup><mo>∣</mo><mi>P</mi><mo>(</mo><mi>S</mi><mo>)</mo><mo>,</mo><msubsup><mi>Y</mi><mrow><mo>&lt;</mo><mi>i</mi></mrow><mi>T</mi></msubsup><mo>)</mo></mrow>
+</math>
+</div>
+
+::: {.symbol-key}
+$M$：回答的文字 token 數。　$y_i^T$：第 $i$ 個正確 token。<br>
+$Y_{<i}^T$：第 $i$ 步之前的回答 tokens。　$P(y_i^T\mid P(S),Y_{<i}^T)$：在已有輸入下預測正確 token 的機率。
+:::
+
+::: {.takeaway}
+訓練時讓正確 token 的機率提高；每一步機率越低，負對數 loss 越大。
+:::
+
+::: {.source}
+[論文 v2 §2.3，式 (3)](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §2.4：語音單元的訓練目標
+
+::: {.method-flow .small-flow}
+<span class="speech-path">資料中的回答錄音 $Y^S$（波形）</span><br>
+↓ HuBERT → 連續語音特徵<br>
+↓ K-means，$K=1000$ → <span class="unit-path">[65, 65, 27, 27, 98]</span><br>
+↓ 合併連續相同 IDs → <span class="unit-path">$Y^U=[65,27,98]$</span>
+:::
+
+$$Y^U=[y_1^U,\ldots,y_L^U],\qquad y_j^U\in\{0,\ldots,999\}$$
+
+<span class="example-label">數字序列為示意。</span>
+
+::: {.takeaway}
+訓練時由回答錄音製作目標；推論時由 speech decoder 預測 units，不需要回答錄音。
+:::
+
+::: {.source}
+[論文 v2 §2.4](https://arxiv.org/html/2409.06666v2)。$Y^U$ 是離散 IDs，$Y^S$ 是波形。
+:::
+
+## §2.4：上採樣與 CTC 預測
+
+::: {.method-flow .ctc-flow}
+$C=[c_1,c_2]$ → 重複每個向量 → $\hat C=[c_1,c_1,c_1,c_2,c_2,c_2]$<br>
+↓ Speech decoder ＋ 分類層<br>
+$A^*=[65,65,\varepsilon,27,27,98]$ → CTC collapse → <span class="unit-path">$Y^U=[65,27,98]$</span> → Vocoder → <span class="speech-path">回答聲音</span>
+:::
+
+$$O=D(\hat C),\qquad P(a_i\mid O)=\operatorname{softmax}(Wo_i+b)[a_i]$$
+
+$$\mathcal L_{\mathrm{CTC}}=-\log\sum_{A:\beta(A)=Y^U}P(A\mid O)$$
+
+<span class="example-label">$\lambda=3$ 與 ID 序列為示意；論文實際 $\lambda=25$。分類：1000 種 units＋blank。</span>
+
+::: {.takeaway}
+把所有能折疊成正確 unit 序列的對齊路徑機率加總；多出的預測位置允許 blank 與重複。
+:::
+
+::: {.source}
+[論文 v2 §2.4](https://arxiv.org/html/2409.06666v2)。Hidden states 先上採樣，再送入 speech decoder 預測 units／blank。
+:::
+
+## §2.5：兩階段訓練與梯度更新
+
+::: {.compact-table .training-table}
+| 階段 | 更新參數 | 凍結模組 | Loss |
+| --- | --- | --- | --- |
+| Stage 1 | Adaptor、LLM | Encoder | $\mathcal L_{\mathrm{LLM}}$ |
+| Stage 2 | Speech decoder | Encoder、Adaptor、LLM | $\mathcal L_{\mathrm{CTC}}$ |
+:::
+
+::: {.training-flow}
+Stage 1　<span class="frozen">Encoder</span> → <span class="updating">Adaptor</span> → <span class="updating">LLM</span> → <span class="text-path">文字 loss</span>　<span class="gradient">⇠ 梯度回傳至 Adaptor、LLM</span><br>
+Stage 2　<span class="frozen">Encoder → Adaptor → LLM</span> → <span class="updating">Speech decoder</span> → <span class="speech-path">CTC loss</span>　<span class="gradient">⇠ 梯度只更新 decoder</span>
+:::
+
+::: {.takeaway}
+第一階段學習根據語音生成文字回答；第二階段固定前面的表示，學習生成對應語音。
+:::
+
+::: {.source}
+[論文 v2 §2.5](https://arxiv.org/html/2409.06666v2)。<span class="frozen">灰色＝凍結</span>；<span class="updating">橘色＝更新</span>；虛線意指梯度傳遞。
+:::
+
+## §2.6：串流推論與播放條件
+
+$$|Y^U|-j\geq\Omega$$
+
+$|Y^U|$：目前累積產生的 unit 數。　$j$：已送去合成的 unit 數。　$\Omega$：觸發合成的最小新增 unit 數。
+
+::: {.compact-table .stream-table}
+| 更新時點 | 尚未送去合成的 units | 動作 |
 | --- | --- | --- |
-| Stage 1 | Speech Adaptor、LLM | 從語音指令產生文字回應 |
-| Stage 2 | Speech Decoder | 產生對應的離散語音 units |
+| 第一次 | `[65, 27]` | 繼續累積 |
+| 第二次 | `[65, 27, 98, 11, 53]` | 合成並播放這 5 個 units |
+| 第三次 | `[2, 8]` | 繼續累積 |
+| 回答結束 | 剩餘 `[2, 8]` | 合成並播放剩餘部分 |
 :::
 
-第一階段凍結 speech encoder；第二階段凍結 encoder、adaptor 與 LLM。
-
 ::: {.takeaway}
-§2.5 描述的是**語音指令回應**的訓練目標，沒有提出專門的語音翻譯訓練目標。
+Causal attention 讓 decoder 根據已有前綴產生 units；chunk 門檻決定何時合成並播放。$\Omega$ 不保證每段恰好只有 $\Omega$ 個 units。
 :::
 
 ::: {.source}
-[論文 v1 §2.5](https://arxiv.org/html/2409.06666v1)。這不表示可斷言訓練資料完全沒有翻譯例子。
+$\Omega=4$ 為示意。[論文 v2 §2.6 與 Algorithm 1](https://arxiv.org/html/2409.06666v2)。這裡的 streaming 指輸出語音逐段生成；本輪未測輸入串流、端到端延遲或即時翻譯。
 :::
 
-::: {.notes}
-第一階段讓 adaptor 與 LLM 學習從語音指令直接產生文字回應；speech decoder 此時不參與。第二階段固定前端，訓練 speech decoder 產生語音 units。這個目標提供了思考本次翻譯結果的背景，但本次實驗未拆解提示、語音表示、LLM 任務遵循等因素，無法據此證明真正原因。
+## §3：InstructS2S-200K 的建構流程
+
+::: {.lead}
+先有文字指令，再產生「語音指令、文字回答、語音回答」三元組。
 :::
 
-## §2.6：為什麼能逐段播放回答？
-
-::: {.process}
-文字前綴產生　→　取得對應 hidden states　→　產生部分 units<br>
-units 累積到 chunk 大小 $\Omega$　→　vocoder 合成一段語音
+::: {.compact-table .paper-table}
+| 步驟 | 處理 | 得到的資料 |
+| --- | --- | --- |
+| 1 指令重寫 | Llama-3-70B-Instruct 加入口語詞、改寫數字並縮短問題 | 適合說出口的文字指令 |
+| 2 回答生成 | 同一 70B 模型避免序號、括號與冗長回答 | 精簡的文字回答 |
+| 3 語音合成 | CosyVoice-300M-SFT 合成指令；LJSpeech VITS 合成回答 | 輸入與回答錄音 |
 :::
-
-- 不必等待完整文字回答結束，便可開始播放回應語音。
-- 這裡的 **streaming** 指輸出語音的逐段生成。
 
 ::: {.takeaway}
-本輪未測輸入語音串流、端到端延遲或 streaming speech translation。
+這 20 萬筆資料是從文字指令出發，經改寫和 TTS 合成的語音互動資料。
 :::
 
 ::: {.source}
-[論文 v1 §2.6 與 Algorithm 1](https://arxiv.org/html/2409.06666v1)；本輪測試範圍見[進度紀錄](https://github.com/tc9305/streaming-speech-research/blob/main/Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md)。
+[論文 v2 §3](https://arxiv.org/html/2409.06666v2)。上表描述資料建構流程，不代表真實雙人對話錄音。
 :::
 
-::: {.notes}
-LLM 每產生更多文字 token，就會有新的 hidden states。decoder 可以從已有的前綴預測一部分 units；當累積數量達到指定 chunk size，vocoder 合成並播放一段回答語音。因此輸出端可降低開始播放的等待。論文這一段不是說模型邊聽使用者正在說的話邊做翻譯；我們也沒有測過那種任務。
+## §3：資料來源與規模
+
+::: {.compact-table .paper-table}
+| 來源 | 筆數 | 使用方式 |
+| --- | ---: | --- |
+| Alpaca | 約 5 萬 | 擷取文字指令 |
+| UltraChat | 約 15 萬 | 只使用第一輪指令 |
+| 合計 | 約 20 萬 | 建立 InstructS2S-200K |
+:::
+
+::: {.paper-stats}
+<span>輸入語音 <strong>418 小時</strong>，平均 <strong>7.5 秒</strong></span><br>
+<span>回答語音 <strong>1058 小時</strong>，平均 <strong>19.0 秒</strong></span>
+:::
+
+::: {.takeaway}
+指令端隨機使用 CosyVoice 的男性或女性聲線；回答端由 LJSpeech VITS 合成單一標準聲線。
+:::
+
+::: {.source}
+[論文 v2 §3，Table 1](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §4：實驗設定與訓練成本
+
+::: {.compact-table .paper-table}
+| 項目 | 論文設定 |
+| --- | --- |
+| 基底模型 | Llama-3.1-8B-Instruct |
+| 訓練 | 兩階段，共約 65 小時；4 張 NVIDIA L40 GPU |
+| 測試集 | 199 段語音指令；來自 Alpaca-Eval，移除數學與程式題 |
+| 回答評分 | GPT-4o 給 1–5 分，綜合幫助性、相關性、流暢度與口語適配度 |
+| 延遲量測 | 單張 NVIDIA L40 GPU；量測到語音回答開始的時間 |
+:::
+
+::: {.takeaway}
+65 小時是作者報告的訓練時間；接下來的分數與延遲也都是論文實驗，並非本次三段音訊的測量。
+:::
+
+::: {.source}
+[論文 v2 §4.1–4.2](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §4：離線回答品質與限制
+
+::: {.compact-table .paper-table .result-table}
+| 模型 | S2TIF 分數 | S2SIF 分數 | ASR-WER ↓ |
+| --- | ---: | ---: | ---: |
+| SpeechGPT | 2.98 | 2.19 | 45.00 |
+| SALMONN + Orca | 3.44 | 3.40 | 3.78 |
+| Qwen2-Audio + Orca | 3.47 | 3.38 | 6.77 |
+| **LLaMA-Omni** | **3.99** | **3.47** | 10.82 |
+:::
+
+::: {.takeaway}
+LLaMA-Omni 的 GPT-4o 回答評分最高；但語音與文字的一致性指標 ASR-WER 仍落後兩個串接式系統。
+:::
+
+::: {.source}
+S2TIF＝語音輸入、文字回答；S2SIF＝語音輸入、語音回答。評分範圍 1–5；ASR-WER 越低越好。[論文 v2 §4.4，Table 2](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §4：串流門檻與延遲取捨
+
+::: {.compact-table .paper-table .result-table}
+| 最小 unit 門檻 $\Omega$ | 開始播放延遲 | GPT-4o 分數 | UTMOS 自然度 |
+| --- | ---: | ---: | ---: |
+| 10 | **236.18 ms** | 3.54 | 3.2304 |
+| 40 | 346.73 ms | 3.52 | 3.6688 |
+| 100 | 562.81 ms | 3.49 | 3.8242 |
+| 離線 | 1753.77 ms | 3.47 | 3.9296 |
+:::
+
+::: {.takeaway}
+$\Omega$ 較小會更早播放，但切段較多，這組實驗中的 UTMOS 較低；提高門檻可換取較連續的語音。
+:::
+
+::: {.source}
+論文在單張 L40 GPU 上量測；236.18 ms 為 $\Omega=10$ 的結果。[論文 v2 §4.5、Appendix C Table 4](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §5：語音 LLM 的兩條主要路線
+
+::: {.compact-table .paper-table}
+| 路線 | 做法 | 論文指出的取捨 |
+| --- | --- | --- |
+| 語音 token 納入 LLM 詞表 | SpeechGPT、AudioPaLM 等延續預訓練 | 往往需要大量資料與算力 |
+| 語音 encoder 接 LLM | 將聲音表示送進 LLM | 多數著重理解，輸出主要是文字 |
+| LLaMA-Omni | Encoder＋Adaptor＋LLM＋Speech decoder | 同時生成文字與回答語音 |
+:::
+
+::: {.takeaway}
+本文的定位是以既有開源 LLM 為核心，加入語音輸入與輸出能力；實驗沒有展示邊聽使用者說話邊回應的全雙工對話。
+:::
+
+::: {.source}
+[論文 v2 §5，Speech/Audio Language Models](https://arxiv.org/html/2409.06666v2)。
+:::
+
+## §5：串流生成方法中的 CTC 定位
+
+::: {.compact-table .paper-table}
+| 方法類型 | 如何處理等待與對齊 |
+| --- | --- |
+| Monotonic attention | 透過單調對齊和 READ/WRITE 策略控制何時輸出 |
+| CTC | 以 blank 與重複預測表示等待及可折疊的對齊 |
+| Transducer | 額外的 predictor 建模輸出 token 之間的依賴 |
+:::
+
+::: {.takeaway}
+LLaMA-Omni 以 CTC 學習文字 hidden states 到語音 units 的對齊；非自回歸 decoder 產生部分 units，再按門檻分段合成。
+:::
+
+::: {.source}
+[論文 v2 §2.4、§2.6、§5](https://arxiv.org/html/2409.06666v2)。這是作者採用的設計，論文未逐一與三類方法做受控比較。
+:::
+
+## §6：論文結論與後續方向
+
+::: {.lead}
+20 萬筆合成語音互動資料支撐文字與語音同步生成。
+:::
+
+- 基於 Llama-3.1-8B-Instruct；4 張 L40 GPU 約 65 小時完成訓練。
+- 串流設定 $\Omega=10$ 時，作者報告開始播放延遲為 **236.18 ms**。
+- 未來方向是提升回答語音的表現力，以及更好的即時互動能力。
+
+::: {.takeaway}
+論文驗證了輸出端串流；即時打斷、全雙工對話和輸入語音串流仍需另行驗證。
+:::
+
+::: {.source}
+[論文 v2 §6](https://arxiv.org/html/2409.06666v2)；延遲數值見[Appendix C Table 4](https://arxiv.org/html/2409.06666v2)。
 :::
 
 ## 目前能下的結論
@@ -240,6 +544,7 @@ LLM 每產生更多文字 token，就會有新的 hidden states。decoder 可以
 
 - A01-C3、A03-C3 仍以英文回答；A02-C3 嘗試中文，但語意與字體不符。
 - 這與論文的語音指令回應目標**相容**，尚不能判定具體原因。
+- §2.5 沒有提出專門的翻譯訓練目標；這也無法證明訓練資料完全沒有翻譯例子。
 - 下一步先回收 C1–C4 的 prompt、執行腳本與原始輸出，再設計控制實驗。
 
 ::: {.source}

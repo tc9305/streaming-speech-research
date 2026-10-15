@@ -16,3 +16,50 @@
 .reveal .record{padding:12px 0 14px;border-bottom:1px solid var(--rule);font-size:.83em}.reveal .record p{line-height:1.34;margin:7px 0}.reveal .record-compact{padding:4px 0;font-size:.78em}.reveal .record-compact p{margin:4px 0}
 .reveal .slide-number{font-size:16px;color:var(--muted);background:transparent}
 .reveal :not(pre)>code{font-size:.84em;color:var(--ink);background:#e8eff2;padding:2px 5px}
+.reveal .method-flow{border-top:3px solid var(--teal);border-bottom:1px solid var(--rule);padding:15px 0;margin:4px 0 16px;font-size:1.03em;line-height:1.6;text-align:center}
+.reveal .method-flow p{margin:0}
+.reveal .small-flow{font-size:.88em;line-height:1.55}
+.reveal .generation-flow{font-size:.82em;line-height:1.42;padding:10px 0 13px}
+.reveal .ctc-flow{font-size:.82em;line-height:1.5}
+.reveal .dimension-line{text-align:center;font-size:1.03em;margin:10px 0}
+.reveal .dimension-line p{margin:0}
+.reveal .adaptor-diagram{border-top:3px solid var(--teal);border-bottom:1px solid var(--rule);padding:8px 0 7px;margin:4px 0 12px;text-align:center}
+.reveal .adaptor-lanes{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.reveal .adaptor-lane{display:grid;justify-items:center;align-content:center;row-gap:1px}
+.reveal .adaptor-lane+.adaptor-lane{border-left:1px solid var(--rule)}
+.reveal .adaptor-frames{color:var(--teal);font-family:'Cambria Math','Times New Roman',serif;font-size:.94em;white-space:nowrap}
+.reveal .adaptor-operation{font-size:.67em;color:var(--muted);line-height:1.1}
+.reveal .adaptor-result{font-family:'Cambria Math','Times New Roman',serif;font-size:1.03em;font-style:italic;line-height:1.08}
+.reveal .adaptor-output{color:var(--teal);font-weight:700}
+.reveal .adaptor-shared{font-size:.62em;color:var(--muted);margin-top:4px}
+.reveal .dimension-math{font-family:'Cambria Math','Times New Roman',serif;font-style:italic;white-space:nowrap}
+.reveal .dimension-note{font-size:.68em;color:var(--muted);margin-top:2px}
+.reveal .mlp-diagram{display:grid;grid-template-columns:1fr auto 1.45fr auto .9fr auto 1.3fr auto 1fr;align-items:center;gap:8px;border-top:3px solid var(--teal);border-bottom:1px solid var(--rule);padding:27px 0;margin:16px 0 23px;text-align:center}
+.reveal .mlp-step{min-width:0}
+.reveal .mlp-symbol{font-family:'Cambria Math','Times New Roman',serif;font-size:1.07em;font-style:italic;white-space:nowrap}
+.reveal .mlp-label{font-size:.64em;color:var(--muted);line-height:1.4;margin-top:7px}
+.reveal .mlp-arrow{color:var(--teal);font-size:.88em}
+.reveal .example-label{font-size:.73em;color:var(--muted)}
+.reveal .prompt-line{font-size:.84em;line-height:1.42;border-left:3px solid var(--rule);padding-left:16px;margin-bottom:12px}
+.reveal .prompt-line p{margin:0}
+.reveal .speech-path,.reveal .unit-path{color:#087f8c;font-weight:700}
+.reveal .text-path{color:#4164ae;font-weight:700}
+.reveal .frozen{color:#75838b}
+.reveal .updating{color:#c65f1d;font-weight:700}
+.reveal .gradient{color:#c65f1d;border-bottom:2px dashed #c65f1d;font-size:.78em}
+.reveal .training-flow{font-size:.75em;line-height:1.9;border-top:1px solid var(--rule);padding-top:10px}
+.reveal .training-flow p{margin:0}
+.reveal .training-table table{font-size:.82em}
+.reveal .stream-table table{font-size:.78em;margin:8px 0 12px}
+.reveal .stream-table th,.reveal .stream-table td{padding:7px 13px}
+.reveal .slide .math.display{font-size:.92em;margin:10px auto}
+.reveal .secondary-formula{font-size:.76em;color:var(--muted)}
+.reveal .manual-formula{text-align:center;white-space:nowrap;margin:7px 0 12px;font-family:'Cambria Math','Times New Roman',serif}
+.reveal .symbol-key{font-size:.74em;line-height:1.55;color:var(--muted);border-top:1px solid var(--rule);padding-top:10px;margin:12px 0 18px}
+.reveal .symbol-key p{margin:0}
+.reveal .loss-equation{font-family:'Cambria Math','STIX Two Math','Times New Roman',serif;font-size:1.25em;margin:52px 0 45px;text-align:center}
+.reveal .loss-equation math{margin:0 auto}
+.reveal .paper-table table{font-size:.79em}
+.reveal .paper-table th,.reveal .paper-table td{padding:9px 13px}
+.reveal .result-table table{font-size:.82em}
+.reveal .paper-stats{border-top:1px solid var(--rule);font-size:.93em;line-height:1.6;padding-top:13px;margin-top:8px}
