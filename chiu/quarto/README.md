@@ -5,3 +5,5 @@
 - [SeamlessM4T_ModelArchitecture](SeamlessM4T_ModelArchitecture/README.md)：UnitY2、T2U／Duration 與 SeamlessExpressive 模型架構。
 
 原有的 `chiu/seamless_streaming_progress.qmd` 保留在原位置。
+
+- [Zipformer_First](Zipformer_First/README.md)：動態雙語熱詞與 Memory 注入於串流翻譯的研究提案。

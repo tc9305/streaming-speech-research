@@ -1,0 +1,54 @@
+:root{--ink:#153447;--teal:#087f8c;--gold:#cf8734;--muted:#577083;--paper:#faf9f6;--rule:#d7e0e4}
+.reveal{font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;font-size:30px;color:var(--ink)}
+.reveal .slides{text-align:left}
+.reveal h1,.reveal h2,.reveal h3{font-family:inherit;color:var(--ink);text-transform:none;font-weight:700;letter-spacing:0}
+.reveal h1{font-size:2.3em;line-height:1.25}.reveal h2{font-size:1.48em;margin-bottom:28px;line-height:1.25}.reveal h3{font-size:1em}
+.reveal .slide-background{background:var(--paper)}
+#title-slide{text-align:left;padding-top:85px!important}#title-slide .title{max-width:1050px}#title-slide .subtitle{color:var(--teal);font-size:1.2em;margin-top:25px}#title-slide .quarto-title-author,#title-slide .date{font-size:24px;max-width:1070px;line-height:1.7;color:var(--muted)}#title-slide .quarto-title-authors{justify-content:flex-start}
+.reveal p{line-height:1.55}.reveal li{line-height:1.6;margin-bottom:15px}.reveal strong{color:var(--teal)}
+.reveal table{width:100%;font-size:.94em;border-collapse:collapse;margin:24px 0 30px}.reveal table th{color:var(--teal);border-bottom:2px solid var(--teal)}.reveal table td,.reveal table th{padding:17px 20px;line-height:1.4;border-bottom:1px solid var(--rule)}
+.reveal .lead{font-size:1.38em;font-weight:600;line-height:1.6;margin:25px 0 35px}.reveal .lead p{line-height:1.5}
+.reveal .diagram{width:100%;height:350px;object-fit:contain;margin:5px 0 12px}.reveal figure{margin:0}
+.reveal .takeaway{font-size:.92em;color:var(--teal);border-left:4px solid var(--teal);padding-left:20px;margin:20px 0;line-height:1.55}.reveal .takeaway p{margin:0}
+.reveal .source{font-size:17px;color:var(--muted);line-height:1.55;margin-top:23px}.reveal .source p{line-height:1.55;margin:0}.reveal .source a{color:var(--teal)}
+.reveal .closing{font-size:1.05em;font-weight:600;color:var(--teal);margin-top:30px}.reveal .footer{font-size:12px!important;color:var(--muted)}
+.reveal .slide-number{font-size:16px;background:transparent;color:var(--muted)}
+/* StreamST evidence uses the same typography and palette as SimulST. */
+.reveal .result-chart{height:370px}
+.reveal .evidence-image{display:block;width:100%;height:480px;object-fit:contain;object-position:left center;margin:0}
+.reveal code{font-size:.85em;color:var(--ink);background:#e6f0f2;padding:.08em .2em;border-radius:3px}
+.reveal table caption{font-size:17px;color:var(--muted);line-height:1.55;text-align:left;margin-top:12px}
+.reveal a{color:var(--teal)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Fit the expanded results table on a single slide. */
+.reveal #tbl-results table{font-size:21px;width:100%;margin:16px 0 22px;font-variant-numeric:tabular-nums}
+.reveal #tbl-results table th,.reveal #tbl-results table td{padding:13px 7px;line-height:1.35;white-space:nowrap}
+.reveal #tbl-results table th{font-size:18px}
+.reveal #tbl-results .quarto-float-caption{font-size:17px;line-height:1.5;color:var(--muted)}
+
+/* Architecture figures retain the Liu presentation palette and typography. */
+.reveal .diagram{display:block;height:350px;margin:0 auto 12px}
+.reveal .diagram-tall{height:395px}
+.reveal .eyebrow{color:var(--gold);font-size:19px;letter-spacing:.12em;margin-bottom:15px}
+.reveal .columns{gap:32px}
+.reveal .column{min-width:0}
+.reveal .small-table table{font-size:23px;margin:16px 0}
+.reveal .small-table td,.reveal .small-table th{padding:13px 15px}
+.reveal .source{font-size:16px;margin-top:16px}
+.reveal .steps{font-size:27px}
+.reveal .question{font-size:1.5em;line-height:1.5;color:var(--teal);margin:50px 0 35px}
+.reveal .legend{font-size:22px;color:var(--muted)}
+
+/* Preserve the complete paper figure at a readable size. */
+.reveal img.paper-original{display:block;width:100%;height:485px;object-fit:contain;margin:0 auto 10px}
+
+/* Proposal slides use the existing chiu palette with compact comparisons. */
+.reveal .proposal-tag{color:var(--gold);font-size:23px;font-weight:600}
+.reveal .compact table{font-size:24px;margin:18px 0}
+.reveal .compact td,.reveal .compact th{padding:12px 15px}
+.reveal .diagram{height:325px}
+.reveal .source{font-size:16px;line-height:1.45}
+.reveal .two-col li{font-size:27px}
+#title-slide .title{font-size:2.05em;line-height:1.2}
+#title-slide .subtitle{font-size:1em;max-width:1050px;line-height:1.5}
