@@ -1,0 +1,7 @@
+<script>
+// Manual page labels distinguish the 18 main slides from the backup slides.
+// Home returns to the cover. Reveal's native S key opens the speaker view.
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Home' && !e.ctrlKey && !e.altKey && typeof Reveal !== 'undefined') Reveal.slide(0);
+});
+</script>

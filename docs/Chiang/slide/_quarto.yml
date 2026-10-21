@@ -1,0 +1,33 @@
+project:
+  type: default
+  render:
+    - research-discussion-2026-10-22.qmd
+lang: zh-TW
+format:
+  revealjs:
+    theme: simple
+    css: slides.css
+    width: 1280
+    height: 720
+    margin: 0.04
+    center: false
+    transition: none
+    background-transition: none
+    slide-number: false
+    progress: true
+    controls: true
+    hash: true
+    history: true
+    navigation-mode: linear
+    slide-level: 2
+    incremental: false
+    embed-resources: false
+    auto-stretch: false
+    auto-animate: false
+    controls-layout: edges
+    preview-links: false
+    html-math-method: plain
+    title-slide: false
+    include-after-body: navigation.html
+execute:
+  enabled: false
