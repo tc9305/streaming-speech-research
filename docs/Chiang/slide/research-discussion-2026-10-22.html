@@ -147,17 +147,17 @@ SimulST／Speech LLM<br>研究選題討論
 </div>
 <p>從已選定的復現論文出發，討論 <strong>A–J 十個候選方向</strong>。</p>
 <div class="meta">
-<p>18 頁主簡報 · 約 20 分鐘報告後接討論<br> 本次呈現文獻整理與研究假設，尚無本研究模型實驗結果。</p>
+<p>19 頁主簡報 · 約 20 分鐘報告後接討論<br> 本次呈現文獻整理與研究假設，尚無本研究模型實驗結果。</p>
 </div>
 <div class="source">
 <p>研究起點：<a href="https://aclanthology.org/2026.iwslt-1.27/">Xing et al., IWSLT 2026</a>。文獻核對日：2026-10-21。</p>
 </div>
-<div class="page">
-01 / 18
-</div>
+<div class="page">01 / 19</div>
 <aside class="notes">
-<p>建議時間 30 秒。這次不是已決定題目的開題報告。我已決定復現 Yi Xing、Manli Yu、Pengfei Liu、Helen Meng 的 Test-Time Adaptation of an Offline Multimodal Foundation Model for Simultaneous Speech Translation，仍在準備復現，沒有可報告的自有結果。老師提出 Zipformer／Streaming Transducer 搭配 Speech LLM 值得探索，因此今天把元件組合拆成可實驗的研究問題。</p>
-<p>我個人較關心模型呼叫時機與實際延遲，但這只是興趣，不是題目排序。18 頁之後是備用頁，可在討論時按需要開啟。全部提案與自建案例都不代表模型已能做到。</p>
+<p>老師好，這禮拜我主要整理了把 Speech LLM 用在同時語音翻譯，也就是 SimulST 上的相關研究，想了解目前有哪些做法，以及還有哪些問題值得研究。
+另外，我也初步看了一下 Zipformer 和串流 Transducer，想了解這些串流語音辨識的技術，能不能為這個方向提供一些參考或切入點。
+今天會先報告相關研究的整理，再說明我目前想到的研究方向。</p>
+<p>我個人較關心模型呼叫時機與實際延遲，但這只是興趣，不是題目排序。19 頁之後是備用頁，可在討論時按需要開啟。全部提案與自建案例都不代表模型已能做到。</p>
 <p>完整來源：https://aclanthology.org/2026.iwslt-1.27.pdf 。三份選題資料的版本與用途見同資料夾 sources.md。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -173,48 +173,185 @@ SimulST／Speech LLM<br>研究選題討論
 </section>
 <section id="position" class="slide level2">
 <h2>研究定位與目前進度</h2>
-<div class="lead">
-<p>以既有翻譯能力為起點，研究串流決策的代價與可靠性。</p>
+<div class="lead"><p>評估 Xing et al. 的方法，作為初步實驗起點。</p></div>
+<table>
+<thead><tr><th>原論文實驗資料（開發集）</th><th>來源與翻譯方向</th></tr></thead>
+<tbody>
+<tr><td>MCIF</td><td>ACL 各會議的學術演講錄音；英→德／中／義</td></tr>
+<tr><td>IWSLT26 Czech</td><td>捷克國會眾議院會議錄音；捷克語→英語</td></tr>
+</tbody></table>
+<div class="small"><ul>
+<li><strong>資料取得：</strong>開發集有公開下載連結；官方另提供測試音訊下載。</li>
+<li><strong>初步測試構想：</strong>先使用 MCIF 英語→中文，觀察翻譯品質與延遲。</li>
+<li><strong>後續探索：</strong>依實驗結果評估 Transducer 與 Speech LLM 的分工。</li>
+</ul></div>
+<div class="takeaway"><p>請老師確認：這套方法搭配 MCIF 英翻中，是否適合作為起點？</p></div>
+<div class="source"><p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al. 2026, §3.1</a>；<a href="https://iwslt.org/2026/simultaneous#dev-and-test-sets">IWSLT 2026 資料下載</a>。測試音訊公開不等於參考譯文公開。</p></div>
+<div class="page">02 / 19</div>
+<aside class="notes">
+<p>目前是找到想嘗試的方法，尚未確定復現，也沒有本研究的實驗結果。想先請老師確認 Xing 等人的方法搭配 MCIF 英翻中是否適合作為初步實驗起點，再根據實際品質與延遲觀察，探索 Transducer 的研究空間。</p>
+<p>論文 §3.1 明確使用 development sets：MCIF 是 ACL 會議學術演講，涵蓋英翻德、中、義；IWSLT26 Czech 是捷克國會眾議院會議錄音，用於捷克語翻英語。官方提供開發集下載連結，也另列測試音訊下載；不要將開發集稱為盲測測試集，或推論測試參考譯文全部公開。</p>
+<p>目前可使用實驗室 Linux GPU 主機，硬體規格與實際執行條件仍待確認。</p>
+</aside>
+</section>
+<section id="architecture" class="slide level2 image-map">
+<h2>方法架構：從串流語音到增量翻譯</h2>
+<img class="route-image" src="assets/xing-method-architecture.png" alt="方法架構：輸入音訊經 Silero VAD 與混合切塊後，送入 Qwen3-Omni 多輪翻譯模組；wait-(k, s, n) 控制讀寫，搭配近期譯文 prefill 與跨輪 KV cache，輸出增量翻譯。">
+<div class="page">03 / 19</div>
+<aside class="notes">
+<p>老師，這張圖是我目前想作為 baseline 嘗試的系統架構，整體流程由左至右分為語音切塊與同步翻譯兩大階段：</p>
+<p>1.首先是左邊的語音分段（Segmentation）：</p>
+<p>串流音訊進來後，會先透過 Silero VAD 偵測語音停頓，並結合固定最小與最大長度的限制（Hybrid Chunking），把連續語音切成一段段符合自然語氣的音訊塊（Audio chunks）。</p>
+<p>2.接著進到中間的翻譯模組（Qwen3-Omni）：</p>
+<p>這裡不重新訓練模型，而是把切好的音訊塊，以**『多輪對話』**的形式一段一段餵給模型。為了讓每一輪的翻譯連貫，系統會把前幾輪翻好的文字當作 **Prefill（前綴提示）**塞回給模型，讓它接著往下翻。</p>
+<p>3.上下兩個區塊則是控制『延遲』與『運算效率』的關鍵：</p>
+<p>上方的 wait-$(k, s, n)$ 讀寫策略：負責控制延遲，規定模型一開始要先聽 $k$ 段音訊，之後每讀 $1$ 段音訊、最多只能輸出 $n$ 個字，避免模型過度腦補或落後太多。</p>
+<p>下方的 KV Cache：負責把過去的對話歷史存起來，讓模型每輪只需要計算新進來的音訊塊，大幅降低推論成本。</p>
+<p>我目前的規劃是：
+圖中現在用的分段與讀寫控制是純靠 Silero VAD 和固定規則，還沒有加入 Zipformer / Transducer。我想向老師請教，是否適合先把這套架構跑起來當作實作起點？等觀察完它在品質與延遲上的表現後，再評估怎麼把 Transducer 放進來（例如取代前端切塊，或輔助動態讀寫策略）。」</p>
+</aside>
+</section>
+
+<section id="baseline" class="slide level2">
+<h2>復現起點：分段、讀寫與多輪狀態</h2>
+<div class="proposal">
+<p>原論文架構重繪 · 非本研究新方法</p>
+</div>
+<div class="flow">
+<div class="step">
+串流音訊
+</div>
+<div class="arrow">
+→
+</div>
+<div class="step">
+Silero VAD<small>停頓＋最短／最長切塊</small>
+</div>
+<div class="arrow">
+→
+</div>
+<div class="step">
+Qwen3-Omni<small>多輪語音輸入</small>
+</div>
+<div class="arrow">
+→
+</div>
+<div class="step">
+增量譯文
+</div>
 </div>
 <table class="caption-top">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
 <thead>
 <tr class="header">
-<th>已確定</th>
-<th>尚待決定／驗證</th>
+<th>決策</th>
+<th>原論文設計</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>復現 Xing et al.&nbsp;的 Test-Time Adaptation</td>
-<td>主研究問題、場景與語言對</td>
+<td>何時開始、每次讀多少</td>
+<td>wait-(k, s, n)：先讀 k 塊，之後 s = 1</td>
 </tr>
 <tr class="even">
-<td>探索 Transducer 與 Speech LLM 的分工</td>
-<td>Transducer 是否提供不可替代的訊號</td>
+<td>每輪生成多少</td>
+<td>最多 n 個文字單位；音訊結尾解除限制</td>
 </tr>
 <tr class="odd">
-<td>可使用實驗室 Linux GPU 主機</td>
-<td>GPU 規格、實際執行條件與量測結果</td>
+<td>如何延續翻譯</td>
+<td>近期譯文 prefill、跨輪 KV cache、重複處理</td>
 </tr>
 </tbody>
 </table>
 <div class="takeaway">
-<p>希望老師協助選出一個主問題，並同意公平比較與續做條件。</p>
+<p>切塊、呼叫與輸出額度互相耦合；後續實驗必須拆開。</p>
 </div>
 <div class="source">
-<p>依研究選題討論稿與兩份 R2 整理。R2 是文獻分析，不是本研究已完成的實驗。</p>
+<p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.&nbsp;2026</a>，§2、Fig. 1–2。n：中文為字，英／德／義為詞，排除標點與空白。</p>
 </div>
-<div class="page">
-02 / 18
-</div>
+<div class="page">04 / 19</div>
 <aside class="notes">
-<p>建議時間 50 秒。工作範圍是 speech-to-text 的串流翻譯。此處用 SimulST 指來源尚未結束即開始翻譯，用 StreamST 強調連續、未預先分句的長音訊處理；文獻用語並不完全一致，因此每個實驗都要明列是否有已知句界。</p>
-<p>三份資料提供候選問題與文獻索引，不能把其中先前假設的四張 A10、兩張 GPU、ACL 截稿日、四頁或長文目標、題目分數或改善百分比當成本次背景。沒有預先指定投稿會議，也不估訓練時數、顯存或部署可行性。</p>
-<p>今天請老師決定的是優先研究哪個失敗機制、願意投入哪些資料標註、是否允許小型訓練、字幕要不要顯示草稿。骨幹已選定，不再討論模型推薦或安裝順序。後續若有資源阻礙，應據實記錄，不偷偷換模型後宣稱同條件復現。</p>
+<p>看完架構之後，我整理了如果要嘗試這套方法，需要重現的幾個關鍵設計。</p>
+<p>第一個是語音怎麼切塊。作者使用 VAD 判斷語音停頓，再搭配最短和最長的切塊長度。</p>
+<p>第二個是讀寫策略，也就是先累積多少段語音才開始翻譯，以及之後每一輪讀多少、最多輸出多少文字。</p>
+<p>第三個是怎麼延續前面的翻譯，包括把近期譯文放進下一輪的開頭，以及使用 KV cache 保留跨輪的上下文。</p>
+<p>如果老師覺得這個方向可以，我想先依照論文設定，在 MCIF 英翻中資料上把流程跑起來，確認翻譯品質與延遲，再考慮修改其中的機制</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="limits" class="slide level2">
+<h2>原論文的處理範圍與研究入口</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>證據層級</th>
+<th>內容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>已處理</strong></td>
+<td>離線模型串流化、跨輪延續與重複輸出處理</td>
+</tr>
+<tr class="even">
+<td><strong>作者明示限制</strong></td>
+<td>錯誤累積、無限串流快取、有限領域調參、推論成本</td>
+</tr>
+<tr class="odd">
+<td><strong>我們待驗證</strong></td>
+<td>哪些失敗真的出現？新訊號是否有額外決策價值？</td>
+</tr>
+</tbody>
+</table>
+<div class="lead">
+<p>論文的品質–延遲取捨，不能替代我們的實際延遲量測。</p>
+</div>
+<ul>
+<li>主要表格使用 <strong>CU LongYAAL</strong>，不是 GPU 執行時間。</li>
+<li>En→Zh 的取捨也有品質下降的情況，不能概括為全面勝出。</li>
+</ul>
+<div class="source">
+<p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.&nbsp;2026</a>，§3.1、§3.3、Table 5、Limitations。均為文獻結果。</p>
+</div>
+<div class="page">05 / 19</div>
+<aside class="notes">
+<p>那這套方法已經提供了把離線語音模型用在串流翻譯上的做法。不過，作者也提到幾個限制。</p>
+<p>例如，多輪翻譯的錯誤可能延續到後面；音訊持續輸入時，快取會不斷累積；另外，大模型的推論成本也可能影響實際延遲。</p>
+<p>所以我想先透過初步實驗，確認這些問題在我們的設定下會怎麼出現。例如，等待主要發生在哪個環節？前面翻錯之後，後面會不會繼續受到影響？</p>
+<p>有了這些觀察之後，再評估 Transducer 提供的資訊，能不能幫助改善其中一個問題。這部分目前還是研究假設，需要實驗驗證。</p>
+<p>論文主要呈現的是不計入模型運算時間的延遲指標，所以我們實作時，也需要另外量測包含運算時間的實際延遲。</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="map" class="slide level2 image-map">
+<h2>候選方向地圖：四種事件與十個問題</h2>
+<p><img class="route-image" src="assets/simulst-research-routes.png" alt="SimulST × Speech LLM 候選研究路線。時間與輸出決策：A 呼叫時機、B 可靠定稿、D 生成額度；上下文與長篇可靠性：C 術語提示、E 錯誤恢復、F 語意記憶；語音與模型介面：G 不確定性傳遞、H 輔助對齊；應用與內容忠實度：I 中英夾雜、J 忠實完整。"></p>
+<div class="page">06 / 19</div>
+<aside class="notes">
+<p>前面這篇是我目前找到、想跟老師討論是否適合先實作的方法。</p>
+<p>接下來這一部分，我把範圍拉大，整理了 Speech LLM 用在及時同步語音翻譯時，這些大多是搭配 AI 協助搜尋文獻、整理問題和發想可能做法，再彙整成的候選 idea。</p>
+<p>這些方向不一定都是前面那篇論文的延伸，也還沒有決定要採用哪個架構。我希望先跟老師討論，哪些問題比較值得研究，再決定適合的方法和實驗設計。</p>
+<p>我目前把這些問題整理成十個候選方向。</p>
+<p>有一部分跟串流決策有關，例如什麼時候翻譯、什麼時候定稿，以及每輪生成多少；有一部分跟上下文有關，例如術語怎麼使用、錯誤怎麼恢復，以及長時間翻譯要保留哪些資訊。</p>
+<p>另外，也包含辨識不確定性、語音對齊、中英夾雜和翻譯忠實度等問題。</p>
+<p>接下來我會分別說明每個方向想處理的問題，以及可能怎麼研究。其中有些我會探索 Transducer 能不能提供幫助，但不是每個方向都一定需要它。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -275,164 +412,13 @@ SimulST／Speech LLM<br>研究選題討論
 <div class="source">
 <p>場景為研究動機，未做使用者研究。術語與自我修正相關證據：<a href="https://arxiv.org/abs/2601.22777v2">RASST</a>、<a href="https://arxiv.org/abs/2608.02138v1">Züfle et al.</a>。</p>
 </div>
-<div class="page">
-03 / 18
-</div>
+<div class="page">07 / 19</div>
 <aside class="notes">
-<p>建議時間 55 秒。這三個場景不是三套都要實作的系統，也不是已證實的產品需求頻率。EMI 可以是英語講課中保留英文專業詞、穿插中文解說。專業演講可以有講義或論文作外部上下文。會議同時牽涉長距離記憶和說話者修正，但多人重疊與分離不預設納入第一個研究題目。</p>
-<p>資料選擇應跟主張一致：學術演講資料不能直接證明臺灣 EMI 自然中英夾雜有效。MCIF 或 ACL60/60 可作學術演講候選，需確認取得條件、語向、授權與切分。自建 EMI 子集若需要錄音，要先確保同意與可使用範圍，並建立保留／翻譯規範。</p>
-<p>圖僅示意系統因果順序，沒有實測時間或品質數據。RASST 原文：https://arxiv.org/html/2601.22777v2 。Disfluencies 原文：https://arxiv.org/html/2608.02138v1 。</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
-<section id="baseline" class="slide level2">
-<h2>復現起點：分段、讀寫與多輪狀態</h2>
-<div class="proposal">
-<p>原論文架構重繪 · 非本研究新方法</p>
-</div>
-<div class="flow">
-<div class="step">
-串流音訊
-</div>
-<div class="arrow">
-→
-</div>
-<div class="step">
-Silero VAD<small>停頓＋最短／最長切塊</small>
-</div>
-<div class="arrow">
-→
-</div>
-<div class="step">
-Qwen3-Omni<small>多輪語音輸入</small>
-</div>
-<div class="arrow">
-→
-</div>
-<div class="step">
-增量譯文
-</div>
-</div>
-<table class="caption-top">
-<thead>
-<tr class="header">
-<th>決策</th>
-<th>原論文設計</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>何時開始、每次讀多少</td>
-<td>wait-(k, s, n)：先讀 k 塊，之後 s = 1</td>
-</tr>
-<tr class="even">
-<td>每輪生成多少</td>
-<td>最多 n 個文字單位；音訊結尾解除限制</td>
-</tr>
-<tr class="odd">
-<td>如何延續翻譯</td>
-<td>近期譯文 prefill、跨輪 KV cache、重複處理</td>
-</tr>
-</tbody>
-</table>
-<div class="takeaway">
-<p>切塊、呼叫與輸出額度互相耦合；後續實驗必須拆開。</p>
-</div>
-<div class="source">
-<p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.&nbsp;2026</a>，§2、Fig. 1–2。n：中文為字，英／德／義為詞，排除標點與空白。</p>
-</div>
-<div class="page">
-04 / 18
-</div>
-<aside class="notes">
-<p>建議時間 90 秒。原文是測試時調整串流流程，沒有為 SimulST 另作專門微調。使用 Qwen3-Omni-30B-A3B-Instruct。VAD 的機率配合最小與最大塊長，不是單純遇靜音才切。到達最大長度時的候選邊界可能位於已觀察區間較早位置，量測觸發時間不能回填成那個較早音訊時間。</p>
-<p>第一輪累積 k 個塊，之後每輪讀一個塊。n 是文字單位上限，不等於 tokenizer token 數。停止可能來自額度或 EOS；到音訊結束才放開生成額度。prefill 只帶近期譯文，不等於整個 KV 歷史已做滑動淘汰。重複處理是原方法的一部分，因此 E 不能把「加入重複偵測」直接寫成新貢獻。</p>
-<p>官方模型頁可見公開模型：https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Instruct 。公開模型不等於本機可執行，也不等於論文完整系統可直接下載。論文連結的 owaski/iwslt-2026-baselines 是競賽對照基線，不能當成 Xing 系統官方實作。本研究仍需核實完整實作與版本。</p>
-<p>來源：Xing et al., §2.1、§2.2.1–2.2.4，https://aclanthology.org/2026.iwslt-1.27.pdf 。</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
-<section id="limits" class="slide level2">
-<h2>原論文的處理範圍與研究入口</h2>
-<table class="caption-top">
-<thead>
-<tr class="header">
-<th>證據層級</th>
-<th>內容</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>已處理</strong></td>
-<td>離線模型串流化、跨輪延續與重複輸出處理</td>
-</tr>
-<tr class="even">
-<td><strong>作者明示限制</strong></td>
-<td>錯誤累積、無限串流快取、有限領域調參、推論成本</td>
-</tr>
-<tr class="odd">
-<td><strong>我們待驗證</strong></td>
-<td>哪些失敗真的出現？新訊號是否有額外決策價值？</td>
-</tr>
-</tbody>
-</table>
-<div class="lead">
-<p>論文的品質–延遲取捨，不能替代我們的實際延遲量測。</p>
-</div>
-<ul>
-<li>主要表格使用 <strong>CU LongYAAL</strong>，不是 GPU 執行時間。</li>
-<li>En→Zh 的取捨也有品質下降的情況，不能概括為全面勝出。</li>
-</ul>
-<div class="source">
-<p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.&nbsp;2026</a>，§3.1、§3.3、Table 5、Limitations。均為文獻結果。</p>
-</div>
-<div class="page">
-05 / 18
-</div>
-<aside class="notes">
-<p>建議時間 65 秒。作者在 Limitations 明示四點：多輪錯誤可能延續、快取仍需支援無限串流、調參只涉及較小且領域有限的兩組資料、大模型計算造成較高 computation-aware latency。這些是研究入口，不等於我們已重現相同失敗。</p>
-<p>原文用開發資料做五折交叉驗證。Table 5 的 En→Zh high 設定在更低 CU 延遲下有較低 COMET，因此介紹應說取捨，不能說所有品質與延遲同時改善。本簡報不把作者表格重畫成我們的實驗曲線。</p>
-<p>待驗證的診斷包括：是否真的有可省呼叫、是否真的有不可接受的錯誤定稿、長篇錯誤是否由移除歷史造成。先量測，再決定哪個主張能成立。原文網址 https://aclanthology.org/2026.iwslt-1.27.pdf ，限制見第 245 頁。</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
-<section id="map" class="slide level2 image-map">
-<h2>候選方向地圖：四種事件與十個問題</h2>
-<p><img class="route-image" src="assets/simulst-research-routes.png" alt="SimulST × Speech LLM 候選研究路線。時間與輸出決策：A 呼叫時機、B 可靠定稿、D 生成額度；上下文與長篇可靠性：C 術語提示、E 錯誤恢復、F 語意記憶；語音與模型介面：G 不確定性傳遞、H 輔助對齊；應用與內容忠實度：I 中英夾雜、J 忠實完整。"></p>
-<div class="page">
-06 / 18
-</div>
-<aside class="notes">
-<p>建議時間 80 秒。一次呼叫可以生成零個或多個字；生成文字不必立刻顯示；顯示也不代表已承諾不再修改。只有定稿才形成不可撤回前綴。若 UI 只顯示定稿，內部改寫再多也不是可見閃爍；若 UI 顯示草稿，閃爍是可見文字的刪改量。錯誤定稿是語意內容在定稿當下不獲來源支持，不能以是否改過字串代替。</p>
-<p>本頁圖片由使用者提供。圖片把 A／B／D、C／E／F、G／H、I／J 分成四組，是選題導覽，不表示它們已成為確定的論文主題或實驗結果。原本可編輯的四種事件圖保留在備用 B6。不宣稱原始 Test-Time Adaptation 已提供獨立草稿 UI 或風險控制器。若 B 要新增草稿重譯能力，必須給所有 B 的對照同樣能力並把額外呼叫計入成本。A 改呼叫之前的策略，B 改生成之後的承諾，D 改每次生成量，三者不可一開始同時更動。</p>
-<p>G 是輸入表示選擇，H 是訓練約束，I/J 可以成為獨立主題，也可以是任何方向的壓力測試。十個方向是保留的選題空間，不表示做十套方法。</p>
+<p>剛剛先整理了候選方向，這一頁我想用三個可能的使用場景，說明這些問題為什麼值得關注。</p>
+<p>第一個是 EMI 課堂。講者可能在中文和英文之間切換，也會使用專業術語。這時候除了翻譯正確，還會遇到哪些詞要保留英文、哪些要翻成中文的問題。</p>
+<p>第二個是專業演講。除了術語之外，也要考慮字幕更新的時機：太早翻可能資訊還不完整，等太久又會讓字幕跟不上講者。</p>
+<p>第三個是長時間會議。這時候比較關心前後的人名、術語能不能一致，以及出錯或講者改口後，後面的翻譯能不能正確接續。</p>
+<p>我整理這三個場景，是想把研究問題連到實際使用需求。它們目前是研究動機，還需要資料和實驗確認；接下來我會逐一介紹可能的研究 idea。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -491,14 +477,14 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p>鄰近方法：<a href="https://aclanthology.org/2026.iwslt-1.27/">Xing et al.</a>、<a href="https://aclanthology.org/2026.iwslt-1.23/">NeMo 2026</a>。控制通道的額外價值待驗證。</p>
 </div>
-<div class="page">
-07 / 18
-</div>
+<div class="page">08 / 19</div>
 <aside class="notes">
-<p>建議時間 100 秒。情境：長演講中固定短週期可能重複啟動模型，延長週期則可能錯過可立即翻譯的片段。根因是時間、停頓與可翻譯資訊增加不是相同概念。假設的可推翻版本是：在同骨幹、相近品質、輸出完整性和呼叫預算下，訊號控制能改善實際延遲／成本取捨；若做不到，A 的核心主張不成立。</p>
-<p>改動位於 LLM 之前，翻譯仍接收音訊。先用規則與最大等待、結尾 flush，不先假設需要學習策略。Transducer 的持續推論、資料傳輸、排隊、額外 cache 操作全部算成本。ASR 文字沒送給翻譯，不表示沒有錯誤傳遞：錯誤 emission 或不可靠 blank 仍會誤觸發、切錯或多等。</p>
-<p>呼叫數匹配只能控制部分混淆。還需固定相同骨幹、precision、prompt、cache、commit 策略；記錄總允許輸出額度與實際輸出，否則呼叫變少也把生成預算減少了。檢查品質匹配的前緣、p95 無更新間隔、EOS 後清空時間、漏譯和 GPU busy time／RTF。matched-call 比較與 matched-quality 比較應分開報。</p>
-<p>最大風險：訊號無超過 VAD 的價值、Transducer 本身成本抵銷收益、優勢來自延後輸出。若匹配預算後優勢消失，或靠漏譯才改善指標，停止此主張。來源：https://aclanthology.org/2026.iwslt-1.23.pdf §2；https://aclanthology.org/2026.iwslt-1.27.pdf §2。</p>
+<p>第一個方向，我想問的是：在語音持續進來的時候，什麼時候值得呼叫一次大型翻譯模型？</p>
+<p>如果固定每隔一小段時間就呼叫，可能有些時候新增的資訊還不多，卻又做了一次推論。但如果把間隔拉長，又可能讓已經可以翻譯的內容多等一段時間。</p>
+<p>所以我的 idea 是，探索能不能用串流 Transducer 的辨識進展或輸出穩定程度，輔助判斷現在要呼叫 Speech LLM，還是再多聽一點。</p>
+<p>這裡可以看圖上的兩條路徑：上面是內容路徑，音訊仍直接送給 Speech LLM 翻譯；下面是控制路徑，由 Transducer 提供訊號，協助決定呼叫時機。另外也會設最長等待時間，避免一直不輸出。</p>
+<p>這個方向真正要驗證的是：這些訊號是否比固定時間或單純看語音停頓更有用。在翻譯品質和完整性相近的條件下，能不能改善實際延遲或運算成本，而且要把 Transducer 本身的成本也算進去。</p>
+<p>所以這條路線的關鍵，不只是讓呼叫次數變少，而是確認新增的辨識訊號，能不能幫助系統更有效地安排翻譯時機。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -555,14 +541,15 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p><a href="https://arxiv.org/abs/2610.02612v1">Hoang &amp; Axelrod, 2026</a>，§3、§6：已有 prefix supervision、confidence 與 commit calibration。</p>
 </div>
-<div class="page">
-08 / 18
-</div>
+<div class="page">09 / 19</div>
 <aside class="notes">
-<p>建議時間 85 秒。情境：學生依字幕理解論點，但新語音可能改變語序、否定範圍或專名。根因是部分語音存在資訊不足，模型信心可能不代表語意可承諾。改動在候選生成後、不可撤回前綴擴張前。風險標籤必須由來源支持、人工語意判讀或可驗證的語意單位建構；完整音訊可用於離線標籤，不能作線上特徵。</p>
-<p>最小比較要共享呼叫時間與候選生成流程。如果原生策略沒有重譯草稿，要把共同草稿生成器提供給所有策略，另報相對原系統的總成本。wait-k 僅在相同決策介面可表達時比較。主指標：錯誤定稿率、定稿延遲、risk–coverage、ECE／Brier，加品質與可見閃爍。錯誤分母使用標註語意單位，避免同義字串差異一律算錯。</p>
-<p>近作已研究學習承諾與校準，差異候選是連續長篇、跨領域語意風險與實際延遲；尚未證明這些差異有研究價值。近作限制包括固定區塊、已知句界與未量 wall-clock latency，可作比較邊界，不能改寫成作者方法必然失敗。</p>
-<p>最大風險：可靠標籤難取得、與近作高度重疊。若校準沒有超過簡單信心門檻，或低錯誤只是全面延後，假設不成立。完整來源：https://arxiv.org/html/2610.02612v1 。</p>
+<p>第二個方向，是翻譯的定稿時機。</p>
+<p>在同時語音翻譯裡，模型每次只收到部分語音，後面的內容還沒進來，所以當下產生的翻譯，可能還需要隨著新資訊調整。</p>
+<p>像這頁的例子，從「We did not」到「find evidence」，再到「of improvement」，資訊是逐步補齊的。我想問的是：在每個時間點，哪些翻譯內容已經有足夠依據，可以確定下來、不再修改？</p>
+<p>我的 idea 是，利用當下的翻譯穩定程度、模型信心，或額外的語音訊號，估計現在定稿的風險，再決定要先定稿一部分，還是繼續等待。</p>
+<p>這裡可以跟簡單的信心門檻，以及比較連續幾次翻譯、把共同前綴固定下來的方式做比較，看看能不能在相近的等待時間下，減少錯誤定稿。</p>
+<p>所以這個方向要同時看正確性和延遲。如果只是全部等到最後才定稿，雖然比較有把握，也失去了同時翻譯的意義。</p>
+<p>這裡也不是說文字後來有改寫，就代表前面翻錯了。例如「沒有發現」改成「未發現」，可能只是同義改寫。我真正關心的是，定稿當下的意思，有沒有被已收到的語音支持</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -622,14 +609,13 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p><a href="https://arxiv.org/abs/2601.22777v2">RASST v2</a> 已處理是否／何時用詞；<a href="https://arxiv.org/abs/2607.17766v1">EGTA</a> 已用串流證據選詞。</p>
 </div>
-<div class="page">
-09 / 18
-</div>
+<div class="page">10 / 19</div>
 <aside class="notes">
-<p>建議時間 85 秒。情境：演講資料有很多術語，但說話者此刻只說了一個發音前段，提示可能把模型推向錯的專名。根因是詞表先驗與當下聲學證據不匹配。改動可以位於檢索後的候選門控或 decoder bias 前，但第一個實驗只能選一個，不能同時換檢索器、詞表和翻譯骨幹。</p>
-<p>RASST 是部分語音跨模態檢索並訓練模型適時採用術語；EGTA 使用文件術語記憶與當下串流證據選候選，已有確切詞形、縮寫等匹配。因此「有證據才提示」本身不新。待驗差異要縮小成：對同音干擾、詞尚未說完、錯誤檢索時，新增 Transducer 聲學／posterior 訊號是否超過既有局部文字或檢索證據。</p>
-<p>最小資料要有術語出現時間、正例、未出現干擾詞、相近發音與不同領域。保持相同候選集合與候選數，分開候選命中、模型採用、目標定稿時間。來源術語有證據不表示目標語序已可定稿。比較適用的 RASST/EGTA 完整系統是外部參照，內部新訊號消融才回答歸因。</p>
-<p>若收益來自全面抑制提示、召回大幅下降或未超過簡單分數門檻，假設不成立。原文：https://arxiv.org/html/2601.22777v2 §4；https://arxiv.org/html/2607.17766v1 §3.3、Appendix A.3。</p>
+<p>第三個方向，是術語和外部上下文的使用時機。</p>
+<p>像學術演講，我們可能事先拿得到論文、講義或術語表，這些資訊可以提供翻譯參考。但在串流情境下，講者可能才說到一個詞的前半段，如果太早給模型某個術語提示，就可能讓它往錯的方向猜。</p>
+<p>所以我的 idea 是，在術語候選被找出來之後，再根據目前收到的語音，判斷有沒有足夠證據支持使用這個詞。例如，探索 Transducer 的辨識候選(Decoding Hypotheses)或機率訊號(Probability Signals)，能不能幫助做這個判斷。</p>
+<p>這個方向要同時看兩件事：沒有被講到的術語，有沒有比較少被錯誤插入；真正講到的術語，又能不能正確翻出來。不能只是把所有提示都擋掉，就說誤插率改善了。</p>
+<p>目前已經有研究在處理術語的選擇和使用時機，所以我需要進一步驗證的是，新增的語音證據，能不能比既有的檢索分數或文字線索更有幫助。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -677,14 +663,14 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p>動機：<a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.&nbsp;2026</a>，§2.2.2、§3.3.2 已指出 n 與塊長耦合。新策略尚待驗證。</p>
 </div>
-<div class="page">
-10 / 18
-</div>
+<div class="page">11 / 19</div>
 <aside class="notes">
-<p>建議時間 65 秒。情境：快速講課或中英詞長變化時，字幕看起來持續輸出，實際未翻內容卻越積越多，最後一次爆量。根因是固定每輪產量不匹配語速、來源資訊密度與目標語言展開比例。改動只在生成停止額度，不改呼叫排程、術語或定稿器。</p>
-<p>這裡的總額度指非結尾輪次的上限和，不等於實際生成字數。EOS 可以提早停止，最終 flush 必須獨立記錄。先用時間比例作強簡單對照，再測可因果取得的 source-progress proxy、已輸出量和未翻依存估計。不能把參考譯文長度、未來語音或真實 backlog 偷用在線上。</p>
-<p>最小比較需匹配全程額度預算，並另報自由額度條件，避免只是多給生成量。主指標：EOS 後清空時間、漏譯語意單位率、超前／無證據生成率、p95 定稿延遲與總生成量，輔以品質。待翻內容的真值需離線人工／對齊診斷，不用簡單「字數少」當漏譯。</p>
-<p>最大風險是 backlog 估計不可靠，或更多生成只是把等待轉成幻覺。若相同總額度後收益消失，或只有結尾品質好但線上更慢，就不支持假設。</p>
+<p>接下來 D 關注的是，每一輪應該生成多少翻譯。</p>
+<p>前面的 A 是決定什麼時候呼叫模型，這裡則是假設呼叫時間已經決定了，再來考慮這一輪最多讓模型產生多少文字。</p>
+<p>如果每輪額度都固定，遇到語速比較快、內容比較密集的片段，可能字幕一直有更新，但沒翻完的內容卻越積越多，最後講者停下來了，系統還需要繼續翻很久。</p>
+<p>可是把額度直接拉大也不一定比較好，因為模型可能在資訊還不夠時繼續生成，或讓單次推論時間變長。</p>
+<p>所以我的 idea 是，根據目前收到的語音進展，以及已經輸出的內容，估計這一輪需要多少額度，再動態調整。</p>
+<p>實驗上會先固定呼叫時機，比較固定額度、依音訊長度分配額度，以及動態調整的方式。重點是能不能減少待翻內容的累積，同時維持完整性和忠實度。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -750,14 +736,13 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p><a href="https://aclanthology.org/2026.iwslt-1.27.pdf">Xing et al.</a>，§2.2.3 與 Limitations；<a href="https://arxiv.org/abs/2608.02138v1">Züfle et al.</a> 研究自我修正的語意。</p>
 </div>
-<div class="page">
-11 / 18
-</div>
+<div class="page">12 / 19</div>
 <aside class="notes">
-<p>建議時間 65 秒。情境：會議中一輪開始回覆說明文字或漏掉內容，錯誤被後續上下文繼承。根因是多輪歷史與 KV 狀態把不當內容帶到下一輪。原論文已做 token／文字重複處理，因此本方向應研究較廣的異常與恢復界限，而非重做重複偵測。</p>
-<p>最小方法：以可見來源／輸出進展、格式偏離和重複等訊號偵測，保留可信狀態錨點，從近期音訊重建未定稿後綴；若錯誤已定稿，不能暗中刪改，應另外顯示更正事件並計入錯誤定稿。固定回放範圍和重新生成額度。比較無額外恢復、全清除、局部重建，計算誤報、遺漏／重複、後續錯誤傳播長度、恢復時間和額外成本。</p>
-<p>自然異常與合成注入分開報，不能只用可被規則容易偵測的人造錯誤。最大風險是狀態重建破壞尚未譯出的內容或錯誤偵測不準。若只在注入錯誤有效，需縮限主張。</p>
-<p>示意：講者說 fifteen，之後說 sorry, fifty。前一刻忠實譯成十五不是模型誤譯；之後應呈現講者更正。相反地，在只說 fifteen 時譯成五十，才是模型錯誤。詳細軌跡見備用 B2。來源同頁底。</p>
+<p>接下來 E 關注的是，多輪翻譯出現異常之後，要怎麼恢復。</p>
+<p>例如，某一輪模型開始回答問題，而不是翻譯，或者持續漏掉語音內容。如果這些輸出又被保留在後面的上下文裡，就可能讓錯誤繼續延續。</p>
+<p>我的 idea 是，能不能偵測這類異常，保留前面可信的內容，只回放近期的音訊，重新建立出問題的那一部分狀態。</p>
+<p>我會比較不額外處理、全部重置，以及局部恢復這幾種方式，觀察哪一種能比較快回到正常翻譯，同時減少漏譯、重複和額外運算。</p>
+<p>這個方向也要注意誤判。如果系統其實翻得正常，卻一直被觸發重做，反而可能讓品質和延遲變差。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -815,14 +800,14 @@ Qwen3-Omni<small>多輪語音輸入</small>
 <div class="source">
 <p><a href="https://arxiv.org/abs/2503.02969">InfiniSST</a> 已使用有界 KV；<a href="https://arxiv.org/abs/2507.07803v2">StreamUni</a> 已研究串流生成與歷史處理。</p>
 </div>
-<div class="page">
-12 / 18
-</div>
+<div class="page">13 / 19</div>
 <aside class="notes">
-<p>建議時間 65 秒。情境：會議早先定義縮寫、人物譯名或約定，經過很長間隔再次出現時變得不一致。根因可能是記憶被丟掉，也可能只是模型沒有利用仍可見的資訊，不能由長度與錯誤相關性直接推斷淘汰造成錯誤。</p>
-<p>方法位置在跨輪狀態管理。第一個可控版本用文字記錄選擇，不必直接宣稱任意 KV token 可安全拼接。若改 KV，需要另外驗證位置編碼、audio/text 對應、cache 重建正確性。已錯誤的譯名若長期保留會放大錯誤，因此記憶需要來源與可信度。</p>
-<p>最小比較：同預算 recent-only、固定術語記錄、顯著性選擇；另設保留完整相關資訊的離線診斷條件。記憶預算必須包含保留 cache、文字摘要和檢索索引，不只看 prompt 字數。主指標是實體與術語一致率、長距離指涉正確率、品質、實際狀態大小和延遲。以距離、時長、是否移除分層。</p>
-<p>最大風險：資料缺少重現依賴、摘要引入錯誤、框架不支援可控淘汰。若輸入補回後仍錯，就轉向資訊使用診斷，不把它算成記憶選擇成果。InfiniSST §3.5：https://arxiv.org/html/2503.02969 。</p>
+<p>F 關注的是長時間翻譯的記憶管理。</p>
+<p>例如，講者一開始定義了一個縮寫，或前面已經決定某個人名的譯法，過了很久再提到時，系統還需要用到這些資訊。</p>
+<p>如果只保留最近一段內容，重要資訊可能被移除；但一直保留全部歷史，也會增加記憶和運算負擔。</p>
+<p>所以我的 idea 是，在固定的記憶預算下，除了近期內容，再選擇保留重要的術語、人物和翻譯決策，看看能不能改善長距離的翻譯一致性。</p>
+<p>不過，我會先確認錯誤的原因：是資訊真的被移除了，還是資訊明明還在，模型卻沒有使用。這兩種問題需要不同的處理方式。</p>
+<p>比較時也要維持相同記憶預算，才能確認改善來自資訊選擇，而不是單純多給模型更多歷史。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -864,13 +849,13 @@ H · Transducer 輔助對齊
 <div class="source">
 <p><a href="https://aclanthology.org/2025.findings-emnlp.985/">LegoSLM</a>：CTC posterior 接 LLM；<a href="https://aclanthology.org/2021.emnlp-main.4/">CAAT</a>：翻譯重排序；<a href="https://arxiv.org/abs/2412.16464">Transducer-Llama</a>：ASR 整合。</p>
 </div>
-<div class="page">
-13 / 18
-</div>
+<div class="page">14 / 19</div>
 <aside class="notes">
-<p>建議時間 90 秒。G 的情境是口音、專名或同音歧義。根因是離散 1-best 提早壓掉不確定性。方法位於辨識與翻譯的表示介面，和 A 的 control-only audio 路徑不同，不能當作 A 的小改版。最低版本先比較 1-best 與等文字預算的 N-best；soft posterior 則可能要投影訓練與詞彙映射。RNN-T posterior 依賴聲學時間與 label history，不可當作 CTC 的獨立逐幀分布直接套用。固定下游骨幹、資料、訓練量與候選總長；主指標為歧義子集實體／術語正確率、整體品質與延遲。最大風險是候選噪音、詞表對齊和額外訓練混淆。若 N-best 已達同樣效益，不能宣稱 posterior 介面必要。</p>
-<p>H 的情境是 partial audio 容易超前生成或缺乏可靠來源進展。根因假設為表示未充分保留時間對齊。方法在 speech encoder 的輔助訓練 head／loss，翻譯仍由 Speech LLM 生成。要比較同訓練資料與可訓練參數條件下的無輔助、CTC、RNN-T，並對輔助權重消融。主指標應是 ST 語意品質、不可支持的定稿、CU／CA 延遲，WER 僅輔助診斷。最大風險是強迫 ASR 單調性傷害目標重排序，或提升只是來自多了監督。若只改善 WER、不改善 ST，假設不成立。</p>
-<p>LegoSLM 的先例是 CTC posterior，不是本案 RNN-T 的直接證明。CAAT 是翻譯 transducer，Transducer-Llama 是 ASR；三者都不能被說成已完成本案輔助訓練。來源見頁底正式原文。</p>
+<p>G 和 H 比較偏向模型的輸入介面和訓練設計。</p>
+<p>先看 G。語音辨識遇到專有名詞或相近發音時，可能有幾個合理候選。如果只把第一名的辨識結果交給翻譯模型，其他可能性就被丟掉了。</p>
+<p>所以 G 的 idea 是，保留多個辨識候選，或進一步提供它們的機率資訊，讓翻譯模型結合上下文判斷。要驗證的是，這些額外資訊能不能改善歧義片段的翻譯，以及增加多少延遲。</p>
+<p>H 則是另一個方向：探索在訓練時加入 Transducer 的輔助對齊目標，讓語音表示更好地反映目前聽到了哪些來源內容，再觀察是否有助於部分語音下的翻譯。</p>
+<p>H 會跟沒有輔助訓練，以及使用 CTC 輔助的方式比較。最後仍然要看翻譯品質和延遲；如果只讓語音辨識更準，翻譯卻沒有改善，就不足以支持這個方向。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -912,13 +897,15 @@ J · 流暢，是否仍忠實？
 <div class="source">
 <p>I：本研究場景假設。<a href="https://arxiv.org/abs/2608.02138v1">Züfle et al.</a> 提醒清理口語可能遺失語意；<a href="https://arxiv.org/abs/2604.21045">HPO</a> 是品質／延遲後訓練的鄰近方法。</p>
 </div>
-<div class="page">
-14 / 18
-</div>
+<div class="page">15 / 19</div>
 <aside class="notes">
-<p>建議時間 85 秒。I 情境是 EMI 的自然中英切換，包括術語沿用原文、中文補充與縮寫。根因是「來源語言是什麼」不直接決定「應保留還是翻譯」，還涉及課程規範和受眾。改動位於 prompt／copy policy 的決策，不能將 language ID 當作全部答案。比較一律翻譯、固定詞表保留、動態 evidence policy，所有方法共用目標輸出規範。主要量測決策 accuracy／macro F1、術語保留和翻譯正確率，另報忠實度與延遲。最大風險是自然資料不足或標註者本身不一致。若規範無法建立，或只在合成混語有效，就不能聲稱適用真實 EMI。</p>
-<p>J 情境是流暢字幕漏掉關鍵否定、數字、條件或子句。根因假設是目標流暢性與來源覆蓋不一致，亦可能由輸出額度不足造成，所以要先固定 D。最小方法可在定稿前做來源語意單位的因果檢查，決策為等待、接受或局部重生成，另計檢查器成本。比較原解碼、一般 confidence gate 與語意檢查器，人工盲評數字、否定、漏譯類別，同時報額外等待、誤攔與總品質。</p>
-<p>最大風險是檢查器與生成器共享偏誤；使用 LLM 自評不能直接當真值。若只提升 COMET 或檢查器自評，而人工分類錯誤沒有改善，假設不成立。可將 HPO 類方法留作後續訓練對照，不預設需要 RL。講者修正與模型錯誤分開，詳備用頁。</p>
+<p>最後是兩個比較貼近實際字幕內容的方向。</p>
+<p>I 關注中英夾雜時，哪些詞應該保留、哪些應該翻譯。例如「這個 loss 用 cross-entropy」，可能有些受眾習慣看英文術語，有些則需要中文。</p>
+<p>所以這個問題不只是辨識出哪一段是英文，還要先定義目標字幕的呈現規範。我的 idea 是，結合語言、術語和上下文資訊，動態決定保留或翻譯，再跟一律翻譯、固定詞表保留的方式比較。</p>
+<p>J 則關注翻譯忠實度。即使字幕讀起來很順，還是可能漏掉否定、數字或條件。例如這頁的句子，如果漏掉「沒有」，意思就會完全改變。</p>
+<p>我的 idea 是，在定稿之前檢查目前語音中的關鍵意思是否被正確涵蓋，再決定接受、等待，或局部重新生成。</p>
+<p>評估時除了整體品質分數，也要直接檢查數字、否定和漏譯錯誤是否減少，以及額外增加了多少等待時間。</p>
+<p>以上是我整理的痛點和候選研究 idea。目前還沒有決定要做哪一條，也不是每條都需要加入 Transducer。我希望先跟老師討論，哪些問題比較值得研究，再確認資料、方法和實驗設計。</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -982,9 +969,7 @@ J · 流暢，是否仍忠實？
 <div class="source">
 <p>完整原文與版本見第 18 頁、備用 B5 與 sources.md。本表「仍需證明」是研究判斷，非文獻結論。</p>
 </div>
-<div class="page">
-15 / 18
-</div>
+<div class="page">16 / 19</div>
 <aside class="notes">
 <p>建議時間 85 秒。這頁是選題差異清單，不是競爭排名。A 必須比固定排程與 VAD 更有用，僅把 Transducer 接上 Speech LLM 不夠。B 不能說第一次研究 confidence commitment，因指定的近作已直接研究。C 不能只把 evidence gate 重新命名，因 EGTA 已用局部串流證據，RASST 已學習採用術語時機。</p>
 <p>F 必須超過固定視窗，且辨認資訊移除的因果影響；G 的 RNN-T posterior 若沒有相對 N-best 或 CTC 的特定理由，介面更複雜不等於研究貢獻；H 需量到翻譯而非只有 ASR 變好。E 和 J 要保留講者自我修正的語意，不能把說話者改口當模型品質退步。</p>
@@ -1067,9 +1052,7 @@ J · 流暢，是否仍忠實？
 <div class="source">
 <p><a href="https://aclanthology.org/2025.findings-naacl.393.pdf">CA*, Xu et al.&nbsp;2025</a>：避免把音訊接收與重疊計算時間重複累加。流程為量測設計示意。</p>
 </div>
-<div class="page">
-16 / 18
-</div>
+<div class="page">17 / 19</div>
 <aside class="notes">
 <p>建議時間 100 秒。每個事件保存 monotonic wall clock、來源已可用／已消費音訊範圍、call ID、生成／顯示／commit 文字 span，以及輸出上限、EOS／flush、cache 狀態和異常事件。首次可見延遲與不可撤回定稿延遲分開；可見更新間隔不等於文字對來源的延遲。只顯示定稿時兩者可以重合，但要明列。</p>
 <p>CA* 提醒排程需考慮音訊與計算重疊。單 worker 簡化例可用開始時間 max(所需音訊可用時間, 前一工作完成時間)，再加本次實際服務時間；多 worker 則需依實際依賴圖，不可硬套序列公式。GPU 非同步執行要正確計時，暖機、負載與重複量測固定。各方向新增模組都算入成本。</p>
@@ -1132,9 +1115,7 @@ J · 流暢，是否仍忠實？
 <div class="source">
 <p>本頁為選題判斷，未排名。個人較關心 A 的呼叫時機與實際延遲，仍保留全部方向供討論。</p>
 </div>
-<div class="page">
-17 / 18
-</div>
+<div class="page">18 / 19</div>
 <aside class="notes">
 <p>建議時間 85 秒，之後進入老師討論。先問希望研究哪一個使用者代價，再選工具。A 的優點是可在凍結骨幹下分離控制；B 的難點是標籤與近作差異；C/F 受資料與可信證據制約；D 要防止額度混淆；E 需要自然異常而非只有注入案例；G/H 要承擔介面或訓練複雜度；I/J 需要可靠人工規範。這是證據門檻比較，不是可完成率或成功機率。</p>
 <p>可在會議記錄填：主方向＿＿；備選＿＿；主語向＿＿；主場景＿＿；是否顯示暫定字幕＿＿；允許的訓練範圍＿＿；需取得資料＿＿；續做標準＿＿。Zipformer 是必要架構條件，或是可被消融移除的候選訊號來源，也請老師決定。</p>
@@ -1164,9 +1145,7 @@ J · 流暢，是否仍忠實？
 <div class="source">
 <p>主簡報到此。後接備用 B1–B6；其他相關文獻與三份輸入資料見 sources.md。</p>
 </div>
-<div class="page">
-18 / 18
-</div>
+<div class="page">19 / 19</div>
 <aside class="notes">
 <p>建議時間 20 秒。主簡報共 18 頁。文獻名稱可點擊開啟正式出版頁或鎖定 arXiv 版本。預印本身份不等於已接受，也不把摘要中的改善數字當成本研究成果。</p>
 <p>後續討論可跳到 B1 的 A×D 歸因、B2 的 self-repair 軌跡、B3 的錯誤定義、B4 的最小實驗清單、B5 的延伸文獻與 B6 的可編輯事件圖。當老師問到 novelty，可以回第 15 頁，從最接近的方法和仍需證明的差異回答。</p>
@@ -1743,7 +1722,7 @@ B6 / B6
       });
     </script>
     <script>
-    // Manual page labels distinguish the 18 main slides from the backup slides.
+    // Manual page labels distinguish the 19 main slides from the backup slides.
     // Home returns to the cover. Reveal's native S key opens the speaker view.
     document.addEventListener('keydown', function(e) {
       if(e.key === 'Home' && !e.ctrlKey && !e.altKey && typeof Reveal !== 'undefined') Reveal.slide(0);

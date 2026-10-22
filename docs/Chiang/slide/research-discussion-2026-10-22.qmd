@@ -17,19 +17,19 @@ Zipformer／Streaming Transducer 的角色與研究空間
 從已選定的復現論文出發，討論 **A–J 十個候選方向**。
 
 ::: {.meta}
-18 頁主簡報 · 約 20 分鐘報告後接討論<br>
+19 頁主簡報 · 約 20 分鐘報告後接討論<br>
 本次呈現文獻整理與研究假設，尚無本研究模型實驗結果。
 :::
 
 ::: {.source}
 研究起點：[Xing et al., IWSLT 2026](https://aclanthology.org/2026.iwslt-1.27/)。文獻核對日：2026-10-21。
 :::
-<div class="page">01 / 18</div>
+<div class="page">01 / 19</div>
 
 ::: notes
 建議時間 30 秒。這次不是已決定題目的開題報告。我已決定復現 Yi Xing、Manli Yu、Pengfei Liu、Helen Meng 的 Test-Time Adaptation of an Offline Multimodal Foundation Model for Simultaneous Speech Translation，仍在準備復現，沒有可報告的自有結果。老師提出 Zipformer／Streaming Transducer 搭配 Speech LLM 值得探索，因此今天把元件組合拆成可實驗的研究問題。
 
-我個人較關心模型呼叫時機與實際延遲，但這只是興趣，不是題目排序。18 頁之後是備用頁，可在討論時按需要開啟。全部提案與自建案例都不代表模型已能做到。
+我個人較關心模型呼叫時機與實際延遲，但這只是興趣，不是題目排序。19 頁之後是備用頁，可在討論時按需要開啟。全部提案與自建案例都不代表模型已能做到。
 
 完整來源：https://aclanthology.org/2026.iwslt-1.27.pdf 。三份選題資料的版本與用途見同資料夾 sources.md。
 :::
@@ -37,59 +37,49 @@ Zipformer／Streaming Transducer 的角色與研究空間
 ## 研究定位與目前進度 {#position}
 
 ::: {.lead}
-以既有翻譯能力為起點，研究串流決策的代價與可靠性。
+評估 Xing et al. 的方法，作為初步實驗起點。
 :::
 
-| 已確定 | 尚待決定／驗證 |
+| 原論文實驗資料（開發集） | 來源與翻譯方向 |
 |---|---|
-| 復現 Xing et al. 的 Test-Time Adaptation | 主研究問題、場景與語言對 |
-| 探索 Transducer 與 Speech LLM 的分工 | Transducer 是否提供不可替代的訊號 |
-| 可使用實驗室 Linux GPU 主機 | GPU 規格、實際執行條件與量測結果 |
+| MCIF | ACL 各會議的學術演講錄音；英→德／中／義 |
+| IWSLT26 Czech | 捷克國會眾議院會議錄音；捷克語→英語 |
+
+::: {.small}
+- **資料取得：**開發集有公開下載連結；官方另提供測試音訊下載。
+- **初步測試構想：**先使用 MCIF 英語→中文，觀察翻譯品質與延遲。
+- **後續探索：**依實驗結果評估 Transducer 與 Speech LLM 的分工。
+:::
 
 ::: {.takeaway}
-希望老師協助選出一個主問題，並同意公平比較與續做條件。
+請老師確認：這套方法搭配 MCIF 英翻中，是否適合作為起點？
 :::
 
 ::: {.source}
-依研究選題討論稿與兩份 R2 整理。R2 是文獻分析，不是本研究已完成的實驗。
+[Xing et al. 2026, §3.1](https://aclanthology.org/2026.iwslt-1.27.pdf)；[IWSLT 2026 資料下載](https://iwslt.org/2026/simultaneous#dev-and-test-sets)。測試音訊公開不等於參考譯文公開。
 :::
-<div class="page">02 / 18</div>
+<div class="page">02 / 19</div>
 
 ::: notes
-建議時間 50 秒。工作範圍是 speech-to-text 的串流翻譯。此處用 SimulST 指來源尚未結束即開始翻譯，用 StreamST 強調連續、未預先分句的長音訊處理；文獻用語並不完全一致，因此每個實驗都要明列是否有已知句界。
+目前是找到想嘗試的方法，尚未確定復現，也沒有本研究的實驗結果。想先請老師確認 Xing 等人的方法搭配 MCIF 英翻中是否適合作為初步實驗起點，再根據實際品質與延遲觀察，探索 Transducer 的研究空間。
 
-三份資料提供候選問題與文獻索引，不能把其中先前假設的四張 A10、兩張 GPU、ACL 截稿日、四頁或長文目標、題目分數或改善百分比當成本次背景。沒有預先指定投稿會議，也不估訓練時數、顯存或部署可行性。
+論文 §3.1 明確使用 development sets：MCIF 是 ACL 會議學術演講，涵蓋英翻德、中、義；IWSLT26 Czech 是捷克國會眾議院會議錄音，用於捷克語翻英語。官方提供開發集下載連結，也另列測試音訊下載；不要將開發集稱為盲測測試集，或推論測試參考譯文全部公開。
 
-今天請老師決定的是優先研究哪個失敗機制、願意投入哪些資料標註、是否允許小型訓練、字幕要不要顯示草稿。骨幹已選定，不再討論模型推薦或安裝順序。後續若有資源阻礙，應據實記錄，不偷偷換模型後宣稱同條件復現。
+目前可使用實驗室 Linux GPU 主機，硬體規格與實際執行條件仍待確認。
 :::
 
-## 三個場景，三種使用者代價 {#scenarios}
+## 方法架構：從串流語音到增量翻譯 {.image-map #architecture}
 
-| 場景 | 使用者遇到的問題（示意） | 候選方向 |
-|---|---|---|
-| EMI 課堂 | 中英切換時術語被翻錯，否定或數字漏掉 | C、I、J；A、B |
-| 專業演講 | 術語尚未講完就出現，字幕長時間不更新 | A、B、C、D |
-| 長時間會議 | 前後人名不一致，錯誤延續，講者自我修正 | E、F、G、H、J |
+<img class="route-image" src="assets/xing-method-architecture.png" alt="方法架構：輸入音訊經 Silero VAD 與混合切塊後，送入 Qwen3-Omni 多輪翻譯模組；wait-(k, s, n) 控制讀寫，搭配近期譯文 prefill 與跨輪 KV cache，輸出增量翻譯。">
 
-::: {.flow}
-<div class="step">來源持續到達<small>時間與語意進展不同步</small></div>
-<div class="arrow">→</div>
-<div class="step">翻譯分輪產生<small>每次可用資訊有限</small></div>
-<div class="arrow">→</div>
-<div class="step">使用者閱讀字幕<small>等待、誤解與更正成本</small></div>
-:::
-
-::: {.source}
-場景為研究動機，未做使用者研究。術語與自我修正相關證據：[RASST](https://arxiv.org/abs/2601.22777v2)、[Züfle et al.](https://arxiv.org/abs/2608.02138v1)。
-:::
-<div class="page">03 / 18</div>
+<div class="page">03 / 19</div>
 
 ::: notes
-建議時間 55 秒。這三個場景不是三套都要實作的系統，也不是已證實的產品需求頻率。EMI 可以是英語講課中保留英文專業詞、穿插中文解說。專業演講可以有講義或論文作外部上下文。會議同時牽涉長距離記憶和說話者修正，但多人重疊與分離不預設納入第一個研究題目。
+這張是我目前想嘗試的方法架構，先從左到右介紹。音訊持續進來後，先透過 Silero VAD 和混合切塊，把語音切成一段一段，再送進 Qwen3-Omni 的翻譯模組。
 
-資料選擇應跟主張一致：學術演講資料不能直接證明臺灣 EMI 自然中英夾雜有效。MCIF 或 ACL60/60 可作學術演講候選，需確認取得條件、語向、授權與切分。自建 EMI 子集若需要錄音，要先確保同意與可使用範圍，並建立保留／翻譯規範。
+中間以多輪對話的形式逐步加入語音，並利用近期譯文的 prefill 和下方的 KV cache 延續前面的翻譯脈絡。上方的讀寫策略則控制先累積多少音訊、每輪讀多少，以及每輪最多產生多少文字。
 
-圖僅示意系統因果順序，沒有實測時間或品質數據。RASST 原文：https://arxiv.org/html/2601.22777v2 。Disfluencies 原文：https://arxiv.org/html/2608.02138v1 。
+我想先確認這套方法是否適合作為實作起點，跑起來之後再觀察品質與延遲，以及有沒有適合讓 Transducer 介入的地方。這張圖中的分段元件是 Silero VAD，尚未加入 Transducer。
 :::
 
 ## 復現起點：分段、讀寫與多輪狀態 {#baseline}
@@ -118,7 +108,7 @@ Zipformer／Streaming Transducer 的角色與研究空間
 ::: {.source}
 [Xing et al. 2026](https://aclanthology.org/2026.iwslt-1.27.pdf)，§2、Fig. 1–2。n：中文為字，英／德／義為詞，排除標點與空白。
 :::
-<div class="page">04 / 18</div>
+<div class="page">04 / 19</div>
 
 ::: notes
 建議時間 90 秒。原文是測試時調整串流流程，沒有為 SimulST 另作專門微調。使用 Qwen3-Omni-30B-A3B-Instruct。VAD 的機率配合最小與最大塊長，不是單純遇靜音才切。到達最大長度時的候選邊界可能位於已觀察區間較早位置，量測觸發時間不能回填成那個較早音訊時間。
@@ -148,7 +138,7 @@ Zipformer／Streaming Transducer 的角色與研究空間
 ::: {.source}
 [Xing et al. 2026](https://aclanthology.org/2026.iwslt-1.27.pdf)，§3.1、§3.3、Table 5、Limitations。均為文獻結果。
 :::
-<div class="page">05 / 18</div>
+<div class="page">05 / 19</div>
 
 ::: notes
 建議時間 65 秒。作者在 Limitations 明示四點：多輪錯誤可能延續、快取仍需支援無限串流、調參只涉及較小且領域有限的兩組資料、大模型計算造成較高 computation-aware latency。這些是研究入口，不等於我們已重現相同失敗。
@@ -162,7 +152,7 @@ Zipformer／Streaming Transducer 的角色與研究空間
 
 <img class="route-image" src="assets/simulst-research-routes.png" alt="SimulST × Speech LLM 候選研究路線。時間與輸出決策：A 呼叫時機、B 可靠定稿、D 生成額度；上下文與長篇可靠性：C 術語提示、E 錯誤恢復、F 語意記憶；語音與模型介面：G 不確定性傳遞、H 輔助對齊；應用與內容忠實度：I 中英夾雜、J 忠實完整。">
 
-<div class="page">06 / 18</div>
+<div class="page">06 / 19</div>
 
 ::: notes
 建議時間 80 秒。一次呼叫可以生成零個或多個字；生成文字不必立刻顯示；顯示也不代表已承諾不再修改。只有定稿才形成不可撤回前綴。若 UI 只顯示定稿，內部改寫再多也不是可見閃爍；若 UI 顯示草稿，閃爍是可見文字的刪改量。錯誤定稿是語意內容在定稿當下不獲來源支持，不能以是否改過字串代替。
@@ -170,6 +160,35 @@ Zipformer／Streaming Transducer 的角色與研究空間
 本頁圖片由使用者提供。圖片把 A／B／D、C／E／F、G／H、I／J 分成四組，是選題導覽，不表示它們已成為確定的論文主題或實驗結果。原本可編輯的四種事件圖保留在備用 B6。不宣稱原始 Test-Time Adaptation 已提供獨立草稿 UI 或風險控制器。若 B 要新增草稿重譯能力，必須給所有 B 的對照同樣能力並把額外呼叫計入成本。A 改呼叫之前的策略，B 改生成之後的承諾，D 改每次生成量，三者不可一開始同時更動。
 
 G 是輸入表示選擇，H 是訓練約束，I/J 可以成為獨立主題，也可以是任何方向的壓力測試。十個方向是保留的選題空間，不表示做十套方法。
+:::
+
+## 三個場景，三種使用者代價 {#scenarios}
+
+| 場景 | 使用者遇到的問題（示意） | 候選方向 |
+|---|---|---|
+| EMI 課堂 | 中英切換時術語被翻錯，否定或數字漏掉 | C、I、J；A、B |
+| 專業演講 | 術語尚未講完就出現，字幕長時間不更新 | A、B、C、D |
+| 長時間會議 | 前後人名不一致，錯誤延續，講者自我修正 | E、F、G、H、J |
+
+::: {.flow}
+<div class="step">來源持續到達<small>時間與語意進展不同步</small></div>
+<div class="arrow">→</div>
+<div class="step">翻譯分輪產生<small>每次可用資訊有限</small></div>
+<div class="arrow">→</div>
+<div class="step">使用者閱讀字幕<small>等待、誤解與更正成本</small></div>
+:::
+
+::: {.source}
+場景為研究動機，未做使用者研究。術語與自我修正相關證據：[RASST](https://arxiv.org/abs/2601.22777v2)、[Züfle et al.](https://arxiv.org/abs/2608.02138v1)。
+:::
+<div class="page">07 / 19</div>
+
+::: notes
+建議時間 55 秒。這三個場景不是三套都要實作的系統，也不是已證實的產品需求頻率。EMI 可以是英語講課中保留英文專業詞、穿插中文解說。專業演講可以有講義或論文作外部上下文。會議同時牽涉長距離記憶和說話者修正，但多人重疊與分離不預設納入第一個研究題目。
+
+資料選擇應跟主張一致：學術演講資料不能直接證明臺灣 EMI 自然中英夾雜有效。MCIF 或 ACL60/60 可作學術演講候選，需確認取得條件、語向、授權與切分。自建 EMI 子集若需要錄音，要先確保同意與可使用範圍，並建立保留／翻譯規範。
+
+圖僅示意系統因果順序，沒有實測時間或品質數據。RASST 原文：https://arxiv.org/html/2601.22777v2 。Disfluencies 原文：https://arxiv.org/html/2608.02138v1 。
 :::
 
 ## A：何時值得呼叫大型翻譯模型？ {#a}
@@ -199,7 +218,7 @@ G 是輸入表示選擇，H 是訓練約束，I/J 可以成為獨立主題，也
 ::: {.source}
 鄰近方法：[Xing et al.](https://aclanthology.org/2026.iwslt-1.27/)、[NeMo 2026](https://aclanthology.org/2026.iwslt-1.23/)。控制通道的額外價值待驗證。
 :::
-<div class="page">07 / 18</div>
+<div class="page">08 / 19</div>
 
 ::: notes
 建議時間 100 秒。情境：長演講中固定短週期可能重複啟動模型，延長週期則可能錯過可立即翻譯的片段。根因是時間、停頓與可翻譯資訊增加不是相同概念。假設的可推翻版本是：在同骨幹、相近品質、輸出完整性和呼叫預算下，訊號控制能改善實際延遲／成本取捨；若做不到，A 的核心主張不成立。
@@ -234,7 +253,7 @@ LCP 穩定「且」聲學穩定會更嚴格，不能直接聲稱減少等待。
 ::: {.source}
 [Hoang & Axelrod, 2026](https://arxiv.org/abs/2610.02612v1)，§3、§6：已有 prefix supervision、confidence 與 commit calibration。
 :::
-<div class="page">08 / 18</div>
+<div class="page">09 / 19</div>
 
 ::: notes
 建議時間 85 秒。情境：學生依字幕理解論點，但新語音可能改變語序、否定範圍或專名。根因是部分語音存在資訊不足，模型信心可能不代表語意可承諾。改動在候選生成後、不可撤回前綴擴張前。風險標籤必須由來源支持、人工語意判讀或可驗證的語意單位建構；完整音訊可用於離線標籤，不能作線上特徵。
@@ -272,7 +291,7 @@ LCP 穩定「且」聲學穩定會更嚴格，不能直接聲稱減少等待。
 ::: {.source}
 [RASST v2](https://arxiv.org/abs/2601.22777v2) 已處理是否／何時用詞；[EGTA](https://arxiv.org/abs/2607.17766v1) 已用串流證據選詞。
 :::
-<div class="page">09 / 18</div>
+<div class="page">10 / 19</div>
 
 ::: notes
 建議時間 85 秒。情境：演講資料有很多術語，但說話者此刻只說了一個發音前段，提示可能把模型推向錯的專名。根因是詞表先驗與當下聲學證據不匹配。改動可以位於檢索後的候選門控或 decoder bias 前，但第一個實驗只能選一個，不能同時換檢索器、詞表和翻譯骨幹。
@@ -307,7 +326,7 @@ RASST 是部分語音跨模態檢索並訓練模型適時採用術語；EGTA 使
 ::: {.source}
 動機：[Xing et al. 2026](https://aclanthology.org/2026.iwslt-1.27.pdf)，§2.2.2、§3.3.2 已指出 n 與塊長耦合。新策略尚待驗證。
 :::
-<div class="page">10 / 18</div>
+<div class="page">11 / 19</div>
 
 ::: notes
 建議時間 65 秒。情境：快速講課或中英詞長變化時，字幕看起來持續輸出，實際未翻內容卻越積越多，最後一次爆量。根因是固定每輪產量不匹配語速、來源資訊密度與目標語言展開比例。改動只在生成停止額度，不改呼叫排程、術語或定稿器。
@@ -346,7 +365,7 @@ RASST 是部分語音跨模態檢索並訓練模型適時採用術語；EGTA 使
 ::: {.source}
 [Xing et al.](https://aclanthology.org/2026.iwslt-1.27.pdf)，§2.2.3 與 Limitations；[Züfle et al.](https://arxiv.org/abs/2608.02138v1) 研究自我修正的語意。
 :::
-<div class="page">11 / 18</div>
+<div class="page">12 / 19</div>
 
 ::: notes
 建議時間 65 秒。情境：會議中一輪開始回覆說明文字或漏掉內容，錯誤被後續上下文繼承。根因是多輪歷史與 KV 狀態把不當內容帶到下一輪。原論文已做 token／文字重複處理，因此本方向應研究較廣的異常與恢復界限，而非重做重複偵測。
@@ -382,7 +401,7 @@ RASST 是部分語音跨模態檢索並訓練模型適時採用術語；EGTA 使
 ::: {.source}
 [InfiniSST](https://arxiv.org/abs/2503.02969) 已使用有界 KV；[StreamUni](https://arxiv.org/abs/2507.07803v2) 已研究串流生成與歷史處理。
 :::
-<div class="page">12 / 18</div>
+<div class="page">13 / 19</div>
 
 ::: notes
 建議時間 65 秒。情境：會議早先定義縮寫、人物譯名或約定，經過很長間隔再次出現時變得不一致。根因可能是記憶被丟掉，也可能只是模型沒有利用仍可見的資訊，不能由長度與錯誤相關性直接推斷淘汰造成錯誤。
@@ -428,7 +447,7 @@ G 若等預算後無收益，或 H 只改善 WER，都不足以支持翻譯主�
 ::: {.source}
 [LegoSLM](https://aclanthology.org/2025.findings-emnlp.985/)：CTC posterior 接 LLM；[CAAT](https://aclanthology.org/2021.emnlp-main.4/)：翻譯重排序；[Transducer-Llama](https://arxiv.org/abs/2412.16464)：ASR 整合。
 :::
-<div class="page">13 / 18</div>
+<div class="page">14 / 19</div>
 
 ::: notes
 建議時間 90 秒。G 的情境是口音、專名或同音歧義。根因是離散 1-best 提早壓掉不確定性。方法位於辨識與翻譯的表示介面，和 A 的 control-only audio 路徑不同，不能當作 A 的小改版。最低版本先比較 1-best 與等文字預算的 N-best；soft posterior 則可能要投影訓練與詞彙映射。RNN-T posterior 依賴聲學時間與 label history，不可當作 CTC 的獨立逐幀分布直接套用。固定下游骨幹、資料、訓練量與候選總長；主指標為歧義子集實體／術語正確率、整體品質與延遲。最大風險是候選噪音、詞表對齊和額外訓練混淆。若 N-best 已達同樣效益，不能宣稱 posterior 介面必要。
@@ -472,7 +491,7 @@ I 需要可信的雙語標註規範；J 需要超越單一自動品質分數的�
 ::: {.source}
 I：本研究場景假設。[Züfle et al.](https://arxiv.org/abs/2608.02138v1) 提醒清理口語可能遺失語意；[HPO](https://arxiv.org/abs/2604.21045) 是品質／延遲後訓練的鄰近方法。
 :::
-<div class="page">14 / 18</div>
+<div class="page">15 / 19</div>
 
 ::: notes
 建議時間 85 秒。I 情境是 EMI 的自然中英切換，包括術語沿用原文、中文補充與縮寫。根因是「來源語言是什麼」不直接決定「應保留還是翻譯」，還涉及課程規範和受眾。改動位於 prompt／copy policy 的決策，不能將 language ID 當作全部答案。比較一律翻譯、固定詞表保留、動態 evidence policy，所有方法共用目標輸出規範。主要量測決策 accuracy／macro F1、術語保留和翻譯正確率，另報忠實度與延遲。最大風險是自然資料不足或標註者本身不一致。若規範無法建立，或只在合成混語有效，就不能聲稱適用真實 EMI。
@@ -501,7 +520,7 @@ J 情境是流暢字幕漏掉關鍵否定、數字、條件或子句。根因假
 ::: {.source}
 完整原文與版本見第 18 頁、備用 B5 與 sources.md。本表「仍需證明」是研究判斷，非文獻結論。
 :::
-<div class="page">15 / 18</div>
+<div class="page">16 / 19</div>
 
 ::: notes
 建議時間 85 秒。這頁是選題差異清單，不是競爭排名。A 必須比固定排程與 VAD 更有用，僅把 Transducer 接上 Speech LLM 不夠。B 不能說第一次研究 confidence commitment，因指定的近作已直接研究。C 不能只把 evidence gate 重新命名，因 EGTA 已用局部串流證據，RASST 已學習採用術語時機。
@@ -539,7 +558,7 @@ CA* 是評估論文，不是呼叫門控 baseline。它指出音訊接收和計�
 ::: {.source}
 [CA*, Xu et al. 2025](https://aclanthology.org/2025.findings-naacl.393.pdf)：避免把音訊接收與重疊計算時間重複累加。流程為量測設計示意。
 :::
-<div class="page">16 / 18</div>
+<div class="page">17 / 19</div>
 
 ::: notes
 建議時間 100 秒。每個事件保存 monotonic wall clock、來源已可用／已消費音訊範圍、call ID、生成／顯示／commit 文字 span，以及輸出上限、EOS／flush、cache 狀態和異常事件。首次可見延遲與不可撤回定稿延遲分開；可見更新間隔不等於文字對來源的延遲。只顯示定稿時兩者可以重合，但要明列。
@@ -570,7 +589,7 @@ LongYAAL／StreamLAAL 要選定與輸出設定相容的版本、resegmentation �
 ::: {.source}
 本頁為選題判斷，未排名。個人較關心 A 的呼叫時機與實際延遲，仍保留全部方向供討論。
 :::
-<div class="page">17 / 18</div>
+<div class="page">18 / 19</div>
 
 ::: notes
 建議時間 85 秒，之後進入老師討論。先問希望研究哪一個使用者代價，再選工具。A 的優點是可在凍結骨幹下分離控制；B 的難點是標籤與近作差異；C/F 受資料與可信證據制約；D 要防止額度混淆；E 需要自然異常而非只有注入案例；G/H 要承擔介面或訓練複雜度；I/J 需要可靠人工規範。這是證據門檻比較，不是可完成率或成功機率。
@@ -599,7 +618,7 @@ LongYAAL／StreamLAAL 要選定與輸出設定相容的版本、resegmentation �
 ::: {.source}
 主簡報到此。後接備用 B1–B6；其他相關文獻與三份輸入資料見 sources.md。
 :::
-<div class="page">18 / 18</div>
+<div class="page">19 / 19</div>
 
 ::: notes
 建議時間 20 秒。主簡報共 18 頁。文獻名稱可點擊開啟正式出版頁或鎖定 arXiv 版本。預印本身份不等於已接受，也不把摘要中的改善數字當成本研究成果。
