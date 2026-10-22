@@ -1,0 +1,15 @@
+/* report03: reuse the existing palette with denser research tables. */
+.reveal { font-size: 27px; }
+.reveal h2 { font-size: 1.4em; margin-bottom: 22px; }
+.reveal .lead { font-size: 1.22em; margin: 22px 0 28px; }
+.reveal li { margin-bottom: 11px; line-height: 1.5; }
+.reveal table { font-size: .79em; margin: 18px 0 22px; }
+.reveal table th, .reveal table td { padding: 12px 14px; line-height: 1.4; }
+.reveal .pipeline { background: #e6f0f2; border-left: 4px solid var(--teal); padding: 12px 22px; font-size: .85em; margin: 16px 0; }
+.reveal .pipeline p { margin: 0; line-height: 1.5; }
+.reveal .status { color: var(--muted); font-size: .8em; }
+.reveal .source { font-size: 16px; margin-top: 18px; }
+.reveal .takeaway { font-size: .88em; }
+.reveal .references li { font-size: .85em; }
+#title-slide .title { font-size: 2em; }
+#title-slide .subtitle { font-size: 1em; max-width: 1000px; }

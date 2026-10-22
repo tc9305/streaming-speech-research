@@ -363,7 +363,7 @@ Q&A：如果譯文正確，但語速與停頓不自然，應先檢查哪一段�
 :::
 
 ::: {.source}
-樣式來源：Liu/_quarto.yml、Liu/styles.css、Liu/report.qmd。外部資料核對日期：2026-10-15。
+樣式來源：Liu/report/report/_quarto.yml、Liu/report/report/styles.css、Liu/report/report/report.qmd。外部資料核對日期：2026-10-15。
 :::
 
 ::: {.notes}

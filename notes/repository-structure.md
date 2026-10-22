@@ -21,7 +21,7 @@ Chiang 的網頁、Quarto 簡報及研究紀錄已集中在 `Chiang/SpeechLLM/`�
 | `SimulST/index.qmd`、CSS、assets | `docs/SimulST/` | 在 SimulST 執行 `quarto render`；已有 output-dir 與 post-render |
 | `notes/terminology.md` | `docs/notes/terminology.html` | `python scripts/build_terminology.py`，使用 Quarto Pandoc |
 | `Chiang/SpeechLLM/llama-omni/2026-10-08-progress.md`、`results.json` | `docs/Chiang/SpeechLLM/index.html` | 目前是手寫網頁；修改時人工同步，沒有自動產生腳本 |
-| `Liu/report.qmd`、data、assets | `Liu/report.html` → `docs/Liu/report.html` | 先依 Liu README 渲染，再執行 `scripts/sync_reports.ps1` |
+| `Liu/report/report/report.qmd`、同目錄的 data、assets | `Liu/report/report/report.html` → `docs/Liu/report.html` | 先依 Liu README 渲染，再執行 `scripts/sync_reports.ps1` |
 | `chiu/seamless_streaming_progress.qmd`、assets、images | `chiu/seamless_streaming_progress.html` → `docs/chiu/seamless_streaming_progress.html` | 先依 chiu README 渲染，再執行同步腳本 |
 | `StreamST/README.md` | `docs/StreamST/index.html` | 主題說明與手寫入口，各自維護；完整術語集中到共用筆記 |
 | 無對應 Markdown | `docs/index.html`、`docs/styles.css` | 手寫網站入口與共用樣式 |

@@ -1,0 +1,329 @@
+---
+title: 'SimulST 分布偏移下的穩健性'
+subtitle: '研究方向討論：T1 混合錯誤增強 · T2 信心閘控 · T6 穩健性評估'
+author: 'Nick · Speech Lab'
+date: '2026-10-22'
+date-format: 'YYYY-MM-DD'
+lang: zh-TW
+format:
+  revealjs:
+    theme: simple
+    css: [styles.css, report03.css]
+    width: 1280
+    height: 720
+    margin: 0.06
+    center: false
+    slide-level: 2
+    slide-number: c/t
+    transition: fade
+    controls: true
+    progress: true
+    hash: true
+    history: true
+    navigation-mode: linear
+    embed-resources: true
+    html-math-method: mathml
+    preview-links: false
+    footer: 'SimulST · T1 / T2 / T6 · Research Proposal'
+---
+
+## 本次要討論的核心問題
+
+::: {.lead}
+當聲學條件改變，ASR 的錯誤也改變，<br>串流翻譯還能維持品質與延遲嗎？
+:::
+
+- **T1｜訓練端**：混合不同條件的 ASR 錯誤，能否改善分布外泛化？
+- **T2｜推論端**：依 ASR 信心選擇抗錯策略，能否進一步提升品質？
+- **T6｜評估端**：不同系統的品質與延遲排名，會不會隨條件反轉？
+
+::: {.takeaway}
+建議以 T1 為主題，T2 視 pilot 結果延伸；T6 提供共同評估架構與可能的轉題方向。
+:::
+
+::: {.notes}
+本報告整理 ../../research/r2_7.md 的三個方向，目前是研究提案，沒有新的實驗結果。原筆記以單人、四張 A10、四頁論文為規劃條件；是否能趕上實際投稿時程，仍須確認會議日期與實測成本。三個方向不必同時做成三篇完整工作。
+:::
+
+## 研究範圍與共用術語
+
+| 術語 | 本報告的意思 |
+|---|---|
+| SimulST | 語音尚未輸入完畢，就逐步輸出翻譯 |
+| Distribution shift | 測試時的噪音、混響等條件與訓練分布不同 |
+| ASR confusion bank | 由正確逐字稿與 ASR 輸出對齊，整理出的詞彙錯誤分布 |
+| Prefix MT | 使用尚未完整的來源文字前綴進行翻譯 |
+| OOD | 訓練時未見的條件或設定；需明確定義保留哪些條件 |
+
+::: {.takeaway}
+共同關注：ASR 錯誤如何傳遞到翻譯，以及穩健性改善是否增加串流延遲。
+:::
+
+::: {.notes}
+Confusion bank 的具體表示、替換／刪除／插入是否都納入，屬實作時需確定的項目。原筆記希望使用 long-form streaming evaluation，因此預切句子與連續長音訊的結果要分開解讀。
+:::
+
+## 三個方向如何取捨？
+
+| 方向 | 核心貢獻 | 額外工作 | 優先順序 |
+|---|---|---|---|
+| **T1** 混合錯誤增強 | 檢驗單一錯誤分布的泛化限制 | 建立多個 bank、MT LoRA | **主研究方向** |
+| **T2** 信心閘控 | 以不確定性選擇抗錯策略 | 信心校準、gate、策略切換 | T1 之後再評估 |
+| **T6** 穩健性前緣評估 | 找出偏移下的排名變化 | 三套系統重現、公平評估 | 共用評估／轉題 |
+
+::: {.takeaway}
+原筆記排序為 T1 > T2 > T6；這是可行性判斷，不是實驗結論。
+:::
+
+::: {.notes}
+T1 的問題最集中：不同來源的 ASR 錯誤增強是否可轉移？T2 要先證明不同 robustness profiles 有互補效果。T6 雖可不訓練新模型，卻仍有三個系統的建置與評估成本。
+:::
+
+## T1｜多條件錯誤混合增強
+
+**Domain-Mixture Confusion Augmentation for Shift-Robust SimulST**
+
+::: {.lead}
+單一條件學到的 ASR 錯誤，<br>可能不足以代表其他聲學條件。
+:::
+
+- **研究假設**：clean、noise、reverb 造成的詞彙錯誤分布不同。
+- **方法主張**：MT 訓練時混合多種 confusion bank，可改善未見偏移下的翻譯。
+- **控制變因**：固定 ASR、MT backbone 與串流 read/write policy。
+
+::: {.notes}
+這裡的「可能」很重要。尚未證明不同條件的 confusion distributions 有足夠差異，也未證明 mixture 一定有效。第一步應先檢查錯誤分布與 cross-condition transfer，而非直接宣稱解決問題。
+:::
+
+## T1｜方法流程與主比較
+
+::: {.pipeline}
+訓練語音：clean / noise / reverb<br>↓ 固定 ASR，與 reference 對齊<br>三組 confusion banks<br>↓ 每個 batch 抽取 bank，對來源文字加入詞彙錯誤<br>MT LoRA／prefix training → 固定 policy 的串流翻譯
+:::
+
+| 組別 | MT 訓練輸入 | 要回答的問題 |
+|---|---|---|
+| Clean training | 不加 confusion noise | 錯誤增強是否有幫助？ |
+| Single confusion | 單一 bank，Pinch-style | 單一來源能否跨條件泛化？ |
+| **Mixture confusion** | 多個 bank 混合 | 多來源是否帶來額外改善？ |
+
+::: {.notes}
+表中的 clean training 指文字端不加入 confusion noise，不代表測試只做 clean。三組需固定訓練資料量、步數、backbone 與 policy；single 與 mixture 也應控制總擾動率，避免增益只是來自更大的噪音量。流程為依原筆記整理的待實作設計。
+:::
+
+## T1｜實驗重點：真正測到「泛化」
+
+- **資料**：一個主要 ST corpus、一個語言對；優先考慮 MuST-C 或合法取得的 IWSLT long-form。
+- **測試**：clean、noise、reverb；以相同語音與翻譯參考建立配對比較。
+- **保留未見條件**：測試噪音種類、強度或房間脈衝響應不與訓練重疊。
+- **必要消融**：單一 bank 對各條件的 transfer；mixture 對照相同擾動量。
+
+::: {.takeaway}
+若訓練與測試使用相同 corruption 配方，不能直接宣稱是 OOD 泛化。
+:::
+
+::: {.notes}
+保留未見 corruption 與控制擾動量，是本報告為使原假設可檢驗而補充的設計建議。資料需先確認授權及長音訊可用性；若只有句級資料，應明確報告限制。Common Voice 可作 confusion probe，但不能直接當成帶翻譯標註的 ST 測試集。
+:::
+
+## T1｜最接近工作與預期差異
+
+| 原筆記列出的 prior | 原筆記摘要 | 本題要檢驗的差異 |
+|---|---|---|
+| Pinch-AST | ASR confusion 的 lexical noise、robust prefix MT | 單一來源與跨條件 mixture 的 transfer |
+| Whisper-UT | 模擬 ASR 文字錯誤，結合音訊與不可靠逐字稿 | 聚焦固定 cascade 的錯誤分布，而非新增多模態架構 |
+| Higuchi et al. | 利用 LLM 抵抗 ASR 錯誤，保留 speech cross-attention | 聚焦條件偏移與 streaming prefixes |
+
+::: {.takeaway}
+預期貢獻：建立「錯誤分布差異 → 跨條件退化 → mixture 改善」的證據鏈。
+:::
+
+::: {.source}
+文獻描述沿用原筆記，非本次重新核讀：[Pinch-AST](https://aclanthology.org/2026.iwslt-1.30/) · [Whisper-UT](https://arxiv.org/abs/2509.16375) · [Higuchi et al.](https://www.isca-archive.org/interspeech_2025/higuchi25_interspeech.html)
+:::
+
+::: {.notes}
+不可僅以「用了多個 bank」宣稱新穎性。需回到原論文確認 Pinch-AST 的設定與 domain-independence 說法，再用 transfer 實驗支持差異。本頁是研究筆記的文獻定位摘要，沒有把未核讀的 novelty 判斷寫成已確定事實。
+:::
+
+## T2｜以 ASR 信心選擇抗錯策略
+
+**Confidence-Gated Confusion Adaptation**
+
+::: {.lead}
+同一套抗錯設定，<br>不一定適合所有 ASR 錯誤狀態。
+:::
+
+- **研究假設**：ASR confidence／entropy 能辨識不同的錯誤狀態。
+- **方法**：訓練多個 noise profiles，或以 condition token 控制單一模型。
+- **推論**：利用當下可取得的 ASR 不確定性，選擇適合的 robustness profile。
+
+::: {.notes}
+Robustness profile 指針對不同文字錯誤分布訓練的翻譯策略。Entropy 高通常代表較不確定，但不同模型的 confidence 不一定可直接比較。Gate 只能使用已讀取音訊的資訊，不能偷看未來語音或 reference。
+:::
+
+## T2｜最小實作與對照
+
+::: {.pipeline}
+目前音訊前綴 → 固定 ASR → 文字前綴＋confidence / entropy<br>↓ 單一 threshold gate<br>選擇 robustness profile → MT → 翻譯輸出
+:::
+
+| 比較組 | 策略 |
+|---|---|
+| Fixed confusion | 固定使用一種抗錯設定 |
+| Mixture without gate | T1 的混合模型，全程使用同一設定 |
+| **Confidence gate** | 根據不確定性選擇 profile |
+
+::: {.takeaway}
+T2 的增益必須超過最佳 fixed／mixture baseline，並計入額外推論成本。
+:::
+
+::: {.notes}
+最小 pilot 只加一個 entropy threshold，先不要做複雜 scheduler。門檻在 validation set 選擇後固定，不能在 test set 調參。若需要同時跑多個模型才能做 gate，必須把其時間與記憶體成本算進去；原筆記的低成本假設需實測。
+:::
+
+## T2｜差異與主要風險
+
+- **相對 Pinch-AST**：原筆記將其定位為固定的 training-time noise；T2 在 inference 選策略。
+- **相對 Whisper-UT**：以 ASR 信心作 gate，避免導入大型 audio-text joint decoder。
+- **相對 REINA-TAN**：原筆記區分「何時讀／寫」與「選哪種錯誤適應策略」。
+
+| 風險 | Pilot 檢查方式（設計建議） |
+|---|---|
+| Gate 只反映 SNR，未捕捉實際錯誤 | 與簡單 SNR gate 比較，檢查 confidence 與 ASR 錯誤的關聯 |
+| 對 threshold 太敏感 | 掃描 validation 門檻，檢查結果是否穩定 |
+| 策略切換增加延遲 | 分別量測 gate 時間與完整系統延遲 |
+
+::: {.source}
+文獻定位沿用原筆記：[REINA-TAN](https://arxiv.org/abs/2604.09916)。T2 是否值得進行，取決於 profile 互補性與信心訊號是否有效。
+:::
+
+::: {.notes}
+若 T1 的各 bank 在各條件下表現幾乎相同，gate 可能沒有可以利用的差異。此時應先停止 T2，避免把時間花在沒有明確收益的工程上。
+:::
+
+## T6｜分布偏移下的穩健性前緣
+
+**Distribution-Shift Robustness Frontier Benchmark**
+
+::: {.lead}
+Clean 條件下最好的系統，<br>遇到噪音或混響後，仍然最好嗎？
+:::
+
+- **研究假設**：不同系統的 quality–latency 排名可能隨條件反轉。
+- **方法**：固定三個可執行的 open baselines，建立跨條件退化矩陣。
+- **候選系統**：CUNI、StreamAtt、一個 robust cascade；實際版本與 checkpoint 待確認。
+- **定位**：不提出新模型，貢獻在可重現評估與有解釋力的發現。
+
+::: {.notes}
+原筆記還提到 accent-like conditions，但最小 pilot 僅做 clean 加兩種 corruption。口音應優先使用有適當標註的自然語音，不把一般聲學擾動直接當成真實口音。三套系統必須先確認語言對、資料和串流設定可比較。
+:::
+
+## T6｜評估矩陣與排名反轉
+
+| 系統 | Clean | Noise | Reverb |
+|---|---|---|---|
+| CUNI | 品質 / 延遲 | 品質 / 延遲 | 品質 / 延遲 |
+| StreamAtt | 品質 / 延遲 | 品質 / 延遲 | 品質 / 延遲 |
+| Robust cascade | 品質 / 延遲 | 品質 / 延遲 | 品質 / 延遲 |
+
+- **品質退化**：絕對下降 = BLEU(clean) − BLEU(shift)。
+- **相對退化**：絕對下降 ÷ BLEU(clean) × 100%；clean 分數為 0 時不計算。
+- **延遲退化**：Latency(shift) − Latency(clean)；統一指標與計時方式。
+- **排名反轉**：在相同或可比延遲預算下，clean 的 A > B 變成 shift 的 A < B。
+
+::: {.notes}
+這是空白實驗設計表，不是結果。公式為本報告補充的操作化定義。若要主張 frontier，需對每個系統掃描多個可用的延遲設定，再比較 Pareto frontier；只有單一設定時，只能報告 operating points。應預先選定所有系統可共同計算的長音訊延遲指標，並說明是否包含實際運算時間。排名差距也需檢查統計不確定性。
+:::
+
+## T6｜何時足以成為研究貢獻？
+
+| 原筆記列出的 prior | 原筆記定位 | T6 的研究焦點 |
+|---|---|---|
+| CMU IWSLT 2025 | 以 robust synthesized segments 訓練串流系統 | 跨系統的 systematic shift ranking |
+| CMSP-ST | 以 representation purification 改善 ST robustness | 加入串流延遲軸的比較 |
+| Pinch-AST | Lexical robustness 與 long-stream evaluation | 排名是否隨偏移反轉 |
+
+::: {.takeaway}
+只有分數表還不夠：需提出可重現的反轉現象，並分析哪類偏移使哪類系統退化。
+:::
+
+::: {.source}
+文獻描述沿用原筆記：[CMU IWSLT 2025](https://aclanthology.org/2025.iwslt-1.31/) · [CMSP-ST](https://www.isca-archive.org/interspeech_2025/ou25_interspeech.html) · [Pinch-AST](https://aclanthology.org/2026.iwslt-1.30/)
+:::
+
+::: {.notes}
+原筆記提醒 benchmark-only 的投稿風險。T6 需要超越「噪音會讓品質變差」的已預期現象。統一資料、corruption seeds、硬體、延遲定義與解碼設定，並保留版本和指令，才能讓排名變化有解釋力。
+:::
+
+## 兩週 pilot：繼續、停止或補證據
+
+::: {.status}
+以下門檻來自原筆記的研究設計，全部是【推論】，不是文獻結果或實測數據。
+:::
+
+| 方向 | 支持繼續的訊號 | 停止或改題訊號 |
+|---|---|---|
+| **T1** | 兩個 OOD 條件平均 BLEU ≥ +1.0；clean 下降 ≤ 0.3 | OOD 增益 < 0.5 BLEU；或不同 bank 的效果近乎相同 |
+| **T2** | 相對最佳 fixed／mixture，OOD BLEU ≥ +0.8；額外 policy latency ≤ 0.1 s | 增益 < 0.4 BLEU；或 threshold 極度敏感 |
+| **T6** | 至少一對排名反轉；跨系統退化差距 > 2 BLEU points* | 三系統排名不變，且穩健性差距皆 < 1 BLEU point |
+
+::: {.source}
+* 原文「超過 2 BLEU 相對 degradation 差距」的單位有歧義；本報告暫按絕對 BLEU 下降量的跨系統差距解讀，待討論確認。落在門檻之間者先補證據。
+:::
+
+::: {.notes}
+T1 的最小 pilot 是 single-confusion 對 mixture-confusion，小訓練子集、一個語言對，測 clean/noise/reverb；完整實驗再加入 clean-training baseline。T2 使用相同資料，只增加簡單 gate。T6 的前提是三個系統已能執行。門檻適合篩選方向，正式結論仍要考慮多次執行與統計不確定性。
+:::
+
+## 資源規劃：先量測，再估完整成本
+
+- **規劃條件**：單人、四張 A10、四頁論文範圍；尚未證明可在指定期限內完成。
+- **T1 / T2**：缺少可換算的完整訓練時長，不能給出可信的 GPU-hours。
+- **T6**：若只用現成模型，training 可記 N/A；inference 仍需量測。
+- **Pilot 紀錄**：資料量、步數、wall-clock、GPU 數、峰值記憶體及推論速度。
+
+::: {.takeaway}
+本機 A10 GPU-hours = 實際 wall-clock hours × 使用的 A10 張數。<br>跨硬體換算另需有依據的係數；僅知道 GPU 型號，不能推算完整成本。
+:::
+
+::: {.notes}
+原文列出的 H100 或 V100 數量，若沒有 wall-clock duration，就無法得到完整 run 的 GPU-hours。先測小規模訓練與推論，再按實際工作量估算；也要保留資料處理、失敗重跑與多個 seed 的成本。
+:::
+
+## 執行順序與本次希望確認的事項
+
+| 階段 | 工作與交付物 |
+|---|---|
+| 第 1 週（建議） | 確認語言對與授權；跑通固定 cascade；建立三個 banks 與 clean/noise/reverb 評估 |
+| 第 2 週（建議） | 比較 single 與 mixture；完成品質、延遲、成本表與 transfer 分析 |
+| Pilot 後 | T1 有效再擴大消融；profiles 互補才做 T2；有反轉證據才考慮獨立 T6 |
+
+- **研究主軸**：是否同意先以 T1 為主？
+- **資料與範圍**：採哪個語言對、corpus 與長音訊設定？
+- **判準**：pilot 門檻、延遲指標及 T6 退化差距的定義是否合適？
+
+::: {.notes}
+兩週排程是本報告依原筆記整理的建議，不是已完成進度或工期保證。T6 的三套系統建置不假設一定能塞入 T1 的兩週內。若 mixture 無效，可保留 confusion banks 與評估資料，但不能保證轉 T6 就有足夠貢獻；仍需排名反轉與明顯退化差異的證據。
+:::
+
+## 資料來源與報告使用方式 {.references}
+
+- **內容主來源**：`../../research/r2_7.md` 的 T1、T2、T6、prior work、pilot 與資源限制。
+- **報告狀態**：研究提案；所有增益、退化與延遲門檻均非已完成實驗結果。
+- **本次補充**：OOD 保留條件、控制擾動量、gate 驗證方式、退化公式及建議排程。
+- **文獻狀態**：連結與摘要沿用原筆記；正式 novelty 主張仍需逐篇核讀。
+
+```bash
+# 在儲存庫根目錄執行；各報告使用自己的 Quarto 設定
+quarto preview Liu/report/report03/report03.qmd
+quarto render Liu/report/report03/report03.qmd
+```
+
+::: {.source}
+輸出：Liu/report/report03/report03.html（資源內嵌）。方向鍵換頁、Esc 總覽、F 全螢幕、S 講者模式。每頁備有中文講者筆記。
+:::
+
+::: {.notes}
+此頁可作備用頁，不必在正式報告時逐項朗讀。此檔完整宣告 Reveal.js 設定；本資料夾使用獨立的 _quarto.yml，不會觸發第一份報告的資料更新腳本。
+:::

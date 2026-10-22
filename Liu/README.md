@@ -7,39 +7,17 @@
 - 研究問題：continuous／unbounded input 下如何管理語音與文字歷史，以及可靠地評估品質與延遲？
 - 下一步：閱讀 StreamAtt 的 history selection 與 StreamLAAL 評估方法
 
-## Nemotron 中文 ASR 簡報
+## 報告資料夾
 
-[開啟簡報](report.html) · [Quarto 原始碼](report.qmd)
+所有報告集中在 [report/](report/README.md)，各自保留 Quarto 原始碼、樣式與所需資源。
 
-12 張繁體中文投影片，沿用 `../SimulST/` 的 1280 × 720 Reveal.js 版型：米白背景、深藍標題、青綠重點、頁碼與中文講者筆記。內容依序介紹模型、chunk 設定、中文 CER 結果與下一輪實驗規劃。
+| 報告 | 主題 | 原始碼 | 已產生的簡報 |
+|---|---|---|---|
+| report | Nemotron 3.5 Streaming ASR／中文 chunk-size 實驗 | [report.qmd](report/report/report.qmd) | [report.html](report/report/report.html) |
+| report02 | SimulST 研究挑戰與成熟度 | [report02.qmd](report/report02/report02.qmd) | [report02.html](report/report02/report02.html) |
+| report03 | T1、T2、T6 分布偏移穩健性研究提案 | [report03.qmd](report/report03/report03.qmd) | [report03.html](report/report03/report03.html) |
 
-### 編輯與預覽
-
-安裝 [Quarto CLI](https://quarto.org/docs/get-started/) 後，在 `Liu/` 執行：
-
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -r requirements.txt
-quarto preview report.qmd
-```
-
-產生可離線開啟的單檔簡報：
-
-```sh
-quarto render
-```
-
-- `report.qmd`：逐頁內容與 `.notes` 中文講者筆記。
-- `_quarto.yml`：Reveal.js 設定；輸出保留在 `report.html`。
-- `styles.css`：沿用 SimulST 字型、配色與版面。
-- `data/chunk_results.csv`：實驗數據；渲染前自動重建結果表、摘要與 SVG 圖。
-- `scripts/fix_slide_preview.py`：避免 Live Server 干擾內嵌的講者視窗程式。
-- `assets/experiment-screenshot.png`：完整原始截圖。
-
-方向鍵切換投影片／漸進顯示；`Esc` 開啟總覽；`F` 全螢幕；`S` 講者模式。講者模式建議透過 `quarto preview` 或 Live Server 使用；一般播放可直接開啟 HTML。
-
-此處的 `report.html` 是本機簡報；`../docs/StreamST/index.html` 仍是研究入口。若日後更新 CSV，需同步檢查內文的樣本範圍、數字解讀與講者筆記。此次只有一段中文樣本，沒有實測延遲，也未重新執行 ASR。
+預覽、渲染及資料結構請見 [報告使用說明](report/README.md)。研究筆記仍放在 `research/`。
 
 ## 閱讀入口
 

@@ -1,0 +1,6 @@
+project:
+  type: default
+  render:
+    - report03.qmd
+  post-render:
+    - python3 scripts/fix_slide_preview.py
