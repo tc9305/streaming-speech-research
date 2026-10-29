@@ -9,3 +9,5 @@
 - [Zipformer_First](Zipformer_First/README.md)：動態雙語熱詞與 Memory 注入於串流翻譯的研究提案。
 
 - [Zipformer_Second](Zipformer_Second/README.md)：第二輪研究，聚焦 §7 排名 1、2、4 的雙語術語控制。
+
+- [SimuST_with_RVQ](SimuST_with_RVQ/README.md)：定時熱詞基線、Verified Memory 與 RVQ 研究取捨。
