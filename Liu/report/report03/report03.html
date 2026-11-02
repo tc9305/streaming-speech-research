@@ -1120,10 +1120,16 @@ Nick · Speech Lab
 <p>當聲學條件改變，ASR 的錯誤也改變，<br>串流翻譯還能維持品質與延遲嗎？</p>
 </div>
 <ul>
-<li><strong>T1｜訓練端</strong>：混合不同條件的 ASR 錯誤，能否改善分布外泛化？</li>
-<li><strong>T2｜推論端</strong>：依 ASR 信心選擇抗錯策略，能否進一步提升品質？</li>
-<li><strong>T6｜評估端</strong>：不同系統的品質與延遲排名，會不會隨條件反轉？</li>
+<li><strong>T1｜訓練端</strong>：Domain-Mixture Confusion Augmentation for Shift-Robust SimulST</li>
+<li><strong>T2｜推論端</strong>：Confidence-Gated Confusion Adaptation</li>
+<li><strong>T6｜評估端</strong>：Distribution-Shift Robustness Frontier Benchmark</li>
 </ul>
+<div class="takeaway">
+<p>T2 依 ASR 信心選擇抗錯策略，能否進一步提升品質？</p>
+</div>
+<div class="takeaway">
+<p>T6 不同系統的品質與延遲排名，會不會隨條件反轉？</p>
+</div>
 <div class="takeaway">
 <p>建議以 T1 為主題，T2 視 pilot 結果延伸；T6 提供共同評估架構與可能的轉題方向。</p>
 </div>
