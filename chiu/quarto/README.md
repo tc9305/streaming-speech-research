@@ -11,3 +11,5 @@
 - [Zipformer_Second](Zipformer_Second/README.md)：第二輪研究，聚焦 §7 排名 1、2、4 的雙語術語控制。
 
 - [SimuST_with_RVQ](SimuST_with_RVQ/README.md)：定時熱詞基線、Verified Memory 與 RVQ 研究取捨。
+
+- [channel-asr](channel-asr/README.md)：錄音通道對 ASR 效能影響的論文導讀，含原圖、研究表格與講者備註。

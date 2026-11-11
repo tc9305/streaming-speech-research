@@ -1,0 +1,116 @@
+/*-- scss:rules --*/
+// Project adaptation; theme.scss is preserved byte-for-byte for reference.
+.reveal .slides section { padding: 20px 26px; }
+.reveal h2 { font-size: 38px; line-height: 1.22; margin-bottom: 22px; }
+.reveal h3 { font-size: 29px; }
+.reveal p { margin: .45em 0; }
+.reveal ul, .reveal ol { margin-bottom: .35em; }
+.reveal .columns { gap: 28px; margin: 0; }
+.reveal .columns > .column { min-width: 0; }
+.reveal .small { font-size: 22px; }
+.reveal .tiny { font-size: 18px; }
+.reveal .src { font-size: 16px; color: #596a83; margin: 10px 0; line-height: 1.35; }
+.reveal .ask {
+  background: #ecf5ff; border-left: 5px solid #155dd4;
+  border-radius: 0 12px 12px 0; padding: 13px 20px;
+  font-size: 22px; line-height: 1.36; font-weight: 500; margin: 16px 0;
+  p { margin: 0; }
+}
+.reveal table { margin: 12px 0; }
+.reveal table th, .reveal table td { font-size: 21px; padding: 7px 10px; }
+.reveal .smnsm-card { padding: 22px 24px; }
+.reveal .smnsm-card li { font-size: 23px; }
+.reveal .smnsm-card ul { margin-left: 1em; }
+.reveal .channel-dense { font-size: 23px; }
+.reveal .channel-dense .small { font-size: 22px; }
+.reveal .channel-discussion { font-size: 22px; }
+.reveal .channel-discussion h3 { font-size: 27px; }
+.reveal .channel-matrix table { margin: 10px 0; }
+.reveal .channel-matrix table th, .reveal .channel-matrix table td {
+  font-size: 20px; padding: 5px 7px; text-align: center; vertical-align: middle;
+}
+.reveal .channel-matrix .small { font-size: 21px; }
+.reveal .c1, .reveal .c2, .reveal .c3, .reveal .c4 {
+  display: block; padding: 3px 6px; border-radius: 3px; color: #14243f;
+  font-variant-numeric: tabular-nums; text-align: center;
+}
+// Preserve the source's quantitative heatmap semantics and thresholds.
+.reveal .c1 { background: #d9f0d3; }
+.reveal .c2 { background: #fff3c4; }
+.reveal .c3 { background: #ffd9b3; }
+.reveal .c4 { background: #f4a6a6; }
+.reveal .diag { outline: 2px solid #14243f; outline-offset: -2px; font-weight: 750; }
+.reveal .channel-results table th, .reveal .channel-results table td { font-size: 20px; padding: 5px 10px; }
+.reveal .channel-results .small { font-size: 21px; }
+.reveal .channel-method table th, .reveal .channel-method table td { font-size: 20px; padding: 6px 9px; }
+.reveal .channel-method .small { font-size: 21px; }
+.reveal figure { margin: 10px 0; }
+.reveal figure img {
+  max-height: 310px; object-fit: contain; background: #fff;
+  border: 1px solid #dbe5f2; border-radius: 12px; padding: 10px; box-sizing: border-box;
+}
+.reveal figcaption { font-size: 16px; color: #596a83; line-height: 1.3; }
+.reveal .channel-method figure img { max-height: 380px; }
+.reveal .channel-lanes { margin: 0 0 12px; }
+.reveal .channel-lanes .smnsm-flow { margin: 10px 0; gap: 10px; }
+.reveal .channel-lanes .smnsm-flow > p {
+  display: flex; align-items: center; gap: 10px; margin: 0; width: 100%;
+}
+.reveal .channel-lanes .smnsm-node { padding: 10px 8px; font-size: 21px; border-radius: 8px; }
+.reveal .channel-flow-label { flex: 0 0 105px; font-weight: 750; color: #155dd4; font-size: 23px; }
+.reveal .channel-flow-end { flex: 0 0 90px; font-size: 21px; }
+.reveal .channel-node-accent { background: #eaf3ff; border-top-color: #30b4e7; }
+// The supplied cover rules are monochrome; restore the user's requested dark cover.
+.reveal .slides section.smnsm-cover { min-height: 720px; color: #fff; }
+.reveal .smnsm-cover h2 { display: none; }
+.reveal .smnsm-cover-body { left: 66px; right: 56px; }
+.reveal .channel-title {
+  font-family: 'Source Serif 4', 'Songti TC', Georgia, serif;
+  font-size: 66px; font-weight: 430; line-height: 1.14; letter-spacing: -.025em;
+  max-width: 1100px; margin: 20px 0 28px;
+  strong { color: #80dfff; font-weight: 750; }
+}
+.reveal .channel-title p { margin: 0; line-height: inherit; white-space: pre-line; }
+.reveal .smnsm-cover .smnsm-subtitle { color: #d5e5fa; font-size: 28px; line-height: 1.45; }
+.reveal .channel-byline { color: #a9c1df; font-size: 18px; border-top: 1px solid #486589; padding-top: 18px; margin-top: 30px; }
+.reveal .slides section.smnsm-section {
+  min-height: 720px; background: transparent;
+  &::before { top: 8px; } padding: 100px 68px !important;
+  .smnsm-kicker { margin-top: 44px; }
+  .smnsm-subtitle { font-size: 28px; max-width: 900px; }
+}
+.reveal:has(.smnsm-section.present) .footer { color: #bdd3ef; }
+.reveal:has(.smnsm-cover.present) .footer { display: none !important; }
+.reveal .channel-opening li { margin: 0 0 25px; padding: 15px 24px; border: 1px solid #dbe5f2; border-left: 5px solid #155dd4; border-radius: 0 14px 14px 0; background: #fff; font-size: 28px; }
+.reveal .channel-opening ul { list-style: none; margin: 12px 0; }
+.reveal .fragment { transition: opacity .35s ease, visibility .35s ease; }
+@media print {
+  .reveal .fragment { opacity: 1 !important; visibility: visible !important; }
+  .reveal .smnsm-card { transform: none !important; }
+}
+
+.reveal .slide:has(img[alt^="論文 Fig. 1"]) figure img { max-height: 440px; }
+
+// Paper figures lead the explanation; captions and reading cues remain separate.
+.reveal .channel-figure-focus {
+  .smnsm-kicker { margin: -5px 0 12px; font-size: 16px; }
+  figure { margin: 8px auto 14px; text-align: center; }
+  figure img { width: 100%; max-height: 390px; padding: 16px 20px; }
+  figcaption { text-align: left; margin-top: 7px; }
+}
+.reveal .channel-training-focus figure { max-width: 1000px; }
+.reveal .channel-training-focus figure img { max-height: 365px; }
+.reveal .channel-heatmap-focus figure img { max-height: 380px; }
+.reveal .channel-reading-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px;
+  margin: 16px 0 8px;
+  > div { border-top: 3px solid #9db9da; padding: 9px 12px; background: #f0f5fc; border-radius: 0 0 8px 8px; }
+  p { font-size: 21px; line-height: 1.35; margin: 0 0 5px; }
+  strong { font-size: 23px; }
+}
+.reveal .channel-reading-grid-two { grid-template-columns: 1fr 1fr; }
+.reveal .channel-generalization {
+  margin: 35px 0;
+  li { padding: 12px 18px; margin-bottom: 15px; background: white; border-left: 4px solid #155dd4; border-radius: 0 10px 10px 0; }
+  ul { margin-left: 0; list-style: none; }
+}
