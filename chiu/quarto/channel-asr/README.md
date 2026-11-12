@@ -20,8 +20,8 @@ quarto render
 - `channel-asr-slides.qmd`：完整研究內容、原數據、講者備註、主投影片後的附錄（含新增的 Fig. 1 原圖）。
 - `_quarto.yml`：1280 × 800、fade 換頁、離線資源嵌入與 MathML。
 - `theme.scss`：使用者原始 SCSS，完整保留。
-- `channel-asr.scss`：深色封面、熱圖、流程與密集頁面的適配。
-- `title-slide.html`：以自訂深色封面取代自動標題頁。
+- `channel-asr.scss`：淺色封面與章節頁、熱圖、流程與密集頁面的適配。
+- `title-slide.html`：以自訂封面取代自動標題頁。
 - `fonts.html`、`fonts/`：Figtree、Source Serif 4 可變字體與 OFL 授權；中文字體由裝置系統提供。
 - `DESIGN.md`：原主題設計系統、色彩、字體、版面、元件、動畫及 class 分析。
 - `figs/`：從論文固定版本 PDF 裁出的原圖與來源說明。

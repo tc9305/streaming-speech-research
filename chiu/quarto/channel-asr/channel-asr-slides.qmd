@@ -5,7 +5,7 @@ date: "2026-11-12"
 lang: zh-TW
 ---
 
-## Revealing the Role of Audio Channels in ASR Performance Degradation {.smnsm-cover background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## Revealing the Role of Audio Channels in ASR Performance Degradation {.smnsm-cover background-color="#fafaf8"}
 
 ::: {.smnsm-cover-body}
 ::: {.smnsm-kicker}
@@ -44,7 +44,7 @@ Whisper-small ｜ HAT 客語（8 通道）、TAT 台語（6 通道）
 【0.5 分鐘】背下這一句開場：「這篇的主張是，ASR 換麥克風變差，不只是訓練測試不一致，通道本身的品質就有穩定的難易排序。作者用 adapter 讓各通道的 encoder 特徵向 condenser 對齊，可以直接替換進現有的 decoder。」講完直接進下一頁。
 :::
 
-## 難度跟著通道走？ {.smnsm-section background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## 難度跟著通道走？ {.smnsm-section}
 
 ::: {.smnsm-kicker}
 01 / QUESTION & EVIDENCE
@@ -87,16 +87,24 @@ Whisper-small ｜ HAT 客語（8 通道）、TAT 台語（6 通道）
 
 ## 資料：8 支麥克風「同時」錄同一句話
 
-| 縮寫 | 裝置 | 縮寫 | 裝置 |
-|---|---|---|---|
-| COND | Condenser（專業電容麥克風） | IPH | iPhone |
-| LAV | Lavalier（領夾式） | ADR | Android 手機 |
-| PCM | PC-Mic（一般電腦麥克風） | ZM-X / ZM-Y | ZOOM X-Y 立體聲錄音機的兩個收音頭 |
-| WCAM | Webcam | | |
+::: {.channel-devices}
+| 縮寫 | 全名 | 說明 |
+|---|---|---|
+| **COND** | Condenser | 專業電容式麥克風；論文當作乾淨的 [reference]{.channel-pill .ref} channel |
+| **LAV** | Lavalier | 小型夾式（領夾）麥克風 |
+| **PCM** | PC-Mic | 一般電腦麥克風 |
+| **IPH** | iPhone | 用 iPhone 錄音 |
+| **ADR** | Android | 用 Android 手機錄音 |
+| **ZM-X** | ZOOM-X | Zoom X-Y 立體聲麥克風的其中一個 channel |
+| **ZM-Y** | ZOOM-Y | 同一支 X-Y 立體聲麥克風的另一個 channel |
+| **WCAM** | Webcam | 網路攝影機內建麥克風；論文留作 [unseen]{.channel-pill .unseen} test channel |
+:::
 
+::: {.small}
 - **HAT（客語）**：約 1,461 小時，每通道約 182.6 小時
 - **TAT（台語）**：結構類似，但沒有 Webcam 與 PC-Mic，共 6 通道
 - **關鍵：語者與內容完全相同，唯一的變數是通道** → 分析才能成立
+:::
 
 ::: {.notes}
 【1 分鐘】強調同步錄音是整個分析的前提。HAT 規模一句話帶過。TAT 的裝置是否與 HAT 不同，論文用的是 likely，不是確定。
@@ -168,25 +176,47 @@ EVIDENCE / CHANNEL PERFORMANCE
 注意：這張表是我從 Table I 重整的，不是論文原表，要講清楚。
 :::
 
-## 矩陣沒說的：我的補充觀察 {.channel-dense}
+## 矩陣沒說的：我的三個補充觀察 {.channel-obs}
 
-::: {.small}
-**① 直著看（固定測試通道，比較各模型）**
+:::: {.channel-obs-grid}
+::: {.smnsm-card}
+[① 直著看 · 固定測試通道，比較模型]{.obs-k}
 
-- **WCAM 模型**在每個測試通道都是最好的（平均 **1.45**）；**COND 模型**平均最差（**2.50**），連 COND 測試集上也是 8 個模型中最差（1.64，其他 1.14–1.42）
-- 用最差的通道訓練 decoder，反而最 robust；用最乾淨的反而最脆弱（我的推測：類似 data augmentation 的效果）
+### 最差的通道，練出最 robust 的 decoder
 
-**② 反方向證據：domain mismatch 並非完全不重要**
-
-- WCAM 欄：matched 的 WCAM 模型 2.32，第二名 ZM-X 模型 2.90，領先約 **20%**
-- 其他欄 matched 領先僅約 4–9%（我自行重算）
-- 較精確的說法：**通道品質決定難度排序，domain matching 是次要但對極端通道仍有影響**
-
-**③ 替代解釋（待確認）**
-
-- 我的理解：Fig. 1 的數字與 Table I 的 Van_pre 完全相同，而 Van_pre 的定義是用 Enc_pre 的輸出，所以這 8 個模型應是 **encoder 凍結、只微調 decoder**
-- 若是如此，排序也可能反映「原版 Whisper encoder 對各通道的表示品質」，不一定是物理上的內在難度
+::: {.obs-stats}
+[[1.45]{.num .good} WCAM 模型平均<br>每個測試通道都最好]{.stat}
+[[2.50]{.num .bad} COND 模型平均<br>8 個模型中最差]{.stat}
 :::
+
+- COND 模型連 **COND 測試集**也墊底（1.64，其他 1.14–1.42）
+- 我的推測：效果類似 data augmentation
+:::
+
+::: {.smnsm-card}
+[② 反方向證據]{.obs-k}
+
+### Domain mismatch 並非完全不重要
+
+::: {.obs-stats}
+[[≈20%]{.num} WCAM 欄 matched 領先<br>2.32 vs 次佳 2.90]{.stat}
+[[4–9%]{.num .muted} 其他欄 matched 領先<br>（我自行重算）]{.stat}
+:::
+
+- **通道品質**決定難度排序
+- **Domain matching** 是次要因素，但對極端通道仍有影響
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+[③ 替代解釋 · 待確認]{.obs-k}
+
+### 排序也可能來自 Whisper encoder
+
+- Fig. 1 的數字與 Table I 的 **Van_pre** 完全相同
+- Van_pre 用的是 Enc_pre 的輸出 → 我的理解：8 個模型是 **encoder 凍結、只微調 decoder**
+- 若如此，排序可能反映「原版 encoder 對各通道的表示品質」，不一定是物理上的內在難度
+:::
+::::
 
 ::: {.ask}
 **想請教老師：** Fig. 1 的 8 個模型，encoder 是否凍結？若全模型微調，排序是否仍然存在？
@@ -199,7 +229,7 @@ EVIDENCE / CHANNEL PERFORMANCE
 - 「我的理解是 Fig. 1 的模型 encoder 是凍結、只微調 decoder，因為數字和 Table I 的 Van_pre 完全相同。想跟老師確認我的理解對不對。」
 :::
 
-## 向乾淨的特徵對齊 {.smnsm-section background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## 向乾淨的特徵對齊 {.smnsm-section}
 
 ::: {.smnsm-kicker}
 02 / REPRESENTATION ALIGNMENT
@@ -300,7 +330,7 @@ Van_adp：只換 encoder ｜ DEFA：再讓 decoder 適應
 【1.5 分鐘】講一句：「Enc_adp 只訓練一次，後面所有實驗共用；Table I 的各列是不同的 decoder。」這樣可以避免混淆，也讓教授知道你抓到結構。
 :::
 
-## 替換 encoder 之後 {.smnsm-section background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## 替換 encoder 之後 {.smnsm-section}
 
 ::: {.smnsm-kicker}
 03 / RESULTS & GENERALIZATION
@@ -424,7 +454,7 @@ REPRESENTATION / HAT（左）· TAT（右）
 Fig. 3 只是單句的質性展示，沒有整個測試集的 MSE 或 cosine similarity。
 :::
 
-## 證據支持到哪裡？ {.smnsm-section background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## 證據支持到哪裡？ {.smnsm-section}
 
 ::: {.smnsm-kicker}
 04 / RESEARCH DISCUSSION
@@ -466,7 +496,7 @@ Fig. 3 只是單句的質性展示，沒有整個測試集的 MSE 或 cosine sim
 不確定就直說：「這個論文沒寫，我不確定，但我的推測是…」
 :::
 
-## 附錄（備用，被問到才開） {.smnsm-section .unnumbered background-color="#101c3c" background-gradient="linear-gradient(122deg, #101c3c, #194d91)"}
+## 附錄（備用，被問到才開） {.smnsm-section .unnumbered}
 
 ::: {.smnsm-kicker}
 APPENDIX · DISCUSSION TOOLKIT

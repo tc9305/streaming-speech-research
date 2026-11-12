@@ -21,8 +21,6 @@
 .reveal .smnsm-card { padding: 22px 24px; }
 .reveal .smnsm-card li { font-size: 23px; }
 .reveal .smnsm-card ul { margin-left: 1em; }
-.reveal .channel-dense { font-size: 23px; }
-.reveal .channel-dense .small { font-size: 22px; }
 .reveal .channel-discussion { font-size: 22px; }
 .reveal .channel-discussion h3 { font-size: 27px; }
 .reveal .channel-matrix table { margin: 10px 0; }
@@ -60,26 +58,42 @@
 .reveal .channel-flow-label { flex: 0 0 105px; font-weight: 750; color: #155dd4; font-size: 23px; }
 .reveal .channel-flow-end { flex: 0 0 90px; font-size: 21px; }
 .reveal .channel-node-accent { background: #eaf3ff; border-top-color: #30b4e7; }
-// The supplied cover rules are monochrome; restore the user's requested dark cover.
-.reveal .slides section.smnsm-cover { min-height: 720px; color: #fff; }
+// Cover and chapter dividers share the light canvas of the content slides
+// (same treatment as Liu/report/report04); no dark navy backgrounds.
+.reveal .slides section.smnsm-cover { min-height: 720px; }
 .reveal .smnsm-cover h2 { display: none; }
 .reveal .smnsm-cover-body { left: 66px; right: 56px; }
+.reveal .smnsm-cover .smnsm-kicker { color: #596a83; }
 .reveal .channel-title {
   font-family: 'Source Serif 4', 'Songti TC', Georgia, serif;
-  font-size: 66px; font-weight: 430; line-height: 1.14; letter-spacing: -.025em;
-  max-width: 1100px; margin: 20px 0 28px;
-  strong { color: #80dfff; font-weight: 750; }
+  font-size: 66px; font-weight: 420; line-height: 1.14; letter-spacing: -.025em;
+  color: #171717; max-width: 1100px; margin: 20px 0 28px;
+  strong {
+    color: #171717; font-weight: 760;
+    text-decoration: underline; text-decoration-color: rgba(23, 23, 23, .2);
+    text-decoration-thickness: 3px; text-underline-offset: .13em;
+  }
 }
 .reveal .channel-title p { margin: 0; line-height: inherit; white-space: pre-line; }
-.reveal .smnsm-cover .smnsm-subtitle { color: #d5e5fa; font-size: 28px; line-height: 1.45; }
-.reveal .channel-byline { color: #a9c1df; font-size: 18px; border-top: 1px solid #486589; padding-top: 18px; margin-top: 30px; }
+.reveal .smnsm-cover .smnsm-subtitle { font-size: 28px; line-height: 1.45; }
+.reveal .channel-byline { color: #596a83; font-size: 18px; border-top: 1px solid #d5dbe4; padding-top: 18px; margin-top: 30px; }
 .reveal .slides section.smnsm-section {
-  min-height: 720px; background: transparent;
-  &::before { top: 8px; } padding: 100px 68px !important;
-  .smnsm-kicker { margin-top: 44px; }
-  .smnsm-subtitle { font-size: 28px; max-width: 900px; }
+  color: #14243f; background: none; padding: 20px 26px !important;
+  // Replace the theme's dark-slide rings with the content slides' corner wash.
+  &::before {
+    top: -1.3%; right: -1.5%; width: 37%; height: 30%;
+    border: 0; border-radius: 0; box-shadow: none; transform: none;
+    background: radial-gradient(ellipse at top right, rgba(48, 180, 231, .07), transparent 68%);
+  }
+  h2, h1 {
+    color: #14243f; font-size: 54px; margin-top: 1.6em; max-width: 1000px;
+    &::after { display: block; }
+  }
+  p { color: inherit; }
+  strong { color: #0e3f8b; }
+  .smnsm-kicker { color: #155dd4; margin-top: 30px; }
+  .smnsm-subtitle { color: #4c6588; font-size: 28px; max-width: 900px; }
 }
-.reveal:has(.smnsm-section.present) .footer { color: #bdd3ef; }
 .reveal:has(.smnsm-cover.present) .footer { display: none !important; }
 .reveal .channel-opening li { margin: 0 0 25px; padding: 15px 24px; border: 1px solid #dbe5f2; border-left: 5px solid #155dd4; border-radius: 0 14px 14px 0; background: #fff; font-size: 28px; }
 .reveal .channel-opening ul { list-style: none; margin: 12px 0; }
@@ -114,3 +128,41 @@
   li { padding: 12px 18px; margin-bottom: 15px; background: white; border-left: 4px solid #155dd4; border-radius: 0 10px 10px 0; }
   ul { margin-left: 0; list-style: none; }
 }
+
+// Device list: all eight channels, one per row.
+.reveal .channel-devices table { width: 100%; margin: 4px 0 14px; }
+.reveal .channel-devices table th, .reveal .channel-devices table td { font-size: 22px; padding: 8px 14px; }
+.reveal .channel-devices td:first-child, .reveal .channel-devices th:first-child { width: 11%; white-space: nowrap; }
+.reveal .channel-devices td:nth-child(2), .reveal .channel-devices th:nth-child(2) { width: 15%; white-space: nowrap; }
+.reveal .channel-devices td:nth-child(2) { color: #596a83; }
+.reveal .channel-pill {
+  display: inline-block; font-size: 16px; font-weight: 750; line-height: 1.3;
+  padding: 1px 9px; border-radius: 6px; white-space: nowrap;
+  &.ref { background: #e8f8f2; color: #146b4e; }
+  &.unseen { background: #fff6e5; color: #865917; }
+}
+
+// Supplementary observations: one card per observation, headline number first.
+.reveal .channel-obs-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px;
+  align-items: stretch; margin: 10px 0 20px;
+  .smnsm-card { padding: 22px 22px; }
+  .smnsm-card h3 { font-size: 27px; line-height: 1.25; margin: 0 0 12px; min-height: 2.5em; }
+  .smnsm-card ul { margin: 0 0 0 1em; }
+  .smnsm-card li { font-size: 22px; line-height: 1.4; margin-bottom: .45em; }
+  .smnsm-card p { margin: 0; }
+  .obs-k { display: block; font-size: 15px; font-weight: 750; letter-spacing: .06em; color: #596a83; margin-bottom: 6px; }
+  .obs-stats > p { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; }
+  .stat {
+    display: block; font-size: 16px; line-height: 1.3; color: #596a83;
+    background: #f2f7fd; border-radius: 10px; padding: 9px 11px;
+  }
+  .num { display: block; font-size: 38px; font-weight: 780; line-height: 1.1; color: #14243f; margin-bottom: 3px; font-variant-numeric: tabular-nums; }
+  .num.good { color: #16815b; }
+  .num.bad { color: #c43d50; }
+  .num.muted { color: #596a83; }
+}
+// Pandoc emits equal-width <col>s for this table; give the description column the room.
+.reveal .channel-devices col:nth-child(1) { width: 11% !important; }
+.reveal .channel-devices col:nth-child(2) { width: 15% !important; }
+.reveal .channel-devices col:nth-child(3) { width: 74% !important; }
