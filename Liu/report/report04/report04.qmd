@@ -1,0 +1,931 @@
+---
+title: 'Low-Latency Acoustic Adaptation for Robust Streaming Speech Recognition'
+subtitle: '低延遲聲學自適應與穩健串流 ASR：第一輪文獻調查與 R3 / R4 路線比較'
+author: 'Nick · Speech Lab'
+date: '2026-11-12'
+date-format: 'YYYY-MM-DD'
+lang: zh-TW
+title-slide-attributes:
+  data-visibility: hidden
+format:
+  revealjs:
+    theme: [default, theme.scss]
+    css: [report04.css]
+    width: 1280
+    height: 800
+    margin: 0.04
+    center: false
+    slide-level: 2
+    slide-number: c/t
+    transition: fade
+    background-transition: fade
+    controls: true
+    progress: true
+    hash: true
+    history: true
+    navigation-mode: linear
+    embed-resources: true
+    html-math-method: mathml
+    preview-links: false
+    footer: 'Low-Latency Acoustic Adaptation for Robust Streaming Speech Recognition'
+---
+
+## {.smnsm-cover background-color="#fafaf8"}
+
+::: {.smnsm-cover-body}
+<p class="smnsm-kicker" style="color:#596a83">Literature Survey · Round 1 · 2026-11-07</p>
+
+<h2 style="font-size:64px"><span class="em">Low-Latency</span> Acoustic Adaptation for <span class="em">Robust</span> Streaming Speech Recognition</h2>
+
+<p class="smnsm-subtitle">低延遲聲學自適應與穩健串流 ASR：在 SimulST 中兼顧翻譯品質與延遲 · Nick · Speech Lab · 2026-11-12</p>
+:::
+
+::: {.notes}
+本報告來源為 ../../research/lowlatency_streaming_asr_r1_2026-11-07_checked.md（已核對版）。核對共 80 項：通過 76、錯誤 1、無法核對 3。依核對規則，標「二手」、無法核對或錯誤的內容一律不上投影片；推論寫成事實的句子在投影片上一律標為【推論】。
+:::
+
+## 一頁摘要：這是一個「交集」題目
+
+::: {.smnsm-grid-3 .tight .smnsm-stagger}
+::: {.smnsm-card}
+<span class="card-k">文獻定位</span>
+
+### Streaming TTA × Robust SimulST
+
+ASR 端的 TTA 自 2022 年 SUTA 起快速發展，但**都是非串流**、單句或連續設定。
+
+<span class="smnsm-evidence smnsm-evidence--direct">共識</span>
+:::
+
+::: {.smnsm-card}
+<span class="card-k">實證事實</span>
+
+### 錯誤會傳到翻譯
+
+BSTC：同延遲下 ASR 輸入比人工轉寫少約 **3.3–3.4 BLEU**；噪音下 cascade 的 ASR 幻覺會被 LLM 放大。
+
+<span class="smnsm-evidence smnsm-evidence--direct">已核對</span>
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">研究缺口</span>
+
+### 便宜、串流化、對翻譯有用
+
+真實遠場會議中，TTA「only marginal improvements despite significant computational overhead」。
+
+<span class="smnsm-evidence smnsm-evidence--inference">推論</span>
+:::
+:::
+
+::: {.smnsm-takeaway}
+真正的空缺：以**延遲預算**為約束、以**翻譯品質**為目標、能在 cache-aware 串流模型上運作的輕量自適應；以及中文（尤其台灣華語）含噪 SimulST 評測基準。
+:::
+
+::: {.notes}
+一頁摘要對應原文 (b)。TTA 在合成噪音上可把 WER 從 31.6 降到約 25（Wav2vec2 Base），但都不是串流。CHiME 回顧中 C8 STCON、C7 IACAS-Thinkit、NTT、Cambridge 都用了 TTA，但 NTT 的 C8 系統甚至放棄了偽標籤 TTA。最後的結論在核對時被標為「推論寫成事實」，因此投影片上明確標為推論。
+:::
+
+## 本次報告的路線圖
+
+| 節 | 一句話 |
+|---|---|
+| §1 問題定義 | 不是單一題目；難在無標註、延遲預算、串流 cache、錯誤傳遞四重約束 |
+| §2 入門骨架 | SimulST 有 survey；ASR TTA 沒有，改以 SUTA → DSUTA 奠基論文當骨架 |
+| §3 技術路線 | R1–R6 六條路線；R3／R4 合流到「極少參數」，R5／R6 在 SimulST 端合流 |
+| R3 vs R4 | 先準備好再上場 vs 上場後邊聽邊調；SUTA 的角色、合流方案、請教授決定的事 |
+| §4 評測 | WER、CER、BLEU、延遲各說各話；延遲指標本身準確率差距 > 25 個百分點 |
+| §5–6 動態與成熟度 | 離線穩健 ASR 成熟、ASR TTA 快速成長、串流 TTA 與穩健 SimulST 萌芽 |
+| §7–8 空缺與商機 | 串流化 TTA、錯誤傳遞、台灣華語資料；會議與講座即時翻譯 |
+| §9 待確認 | 資料、陣列、cascade／E2E、延遲預算、MT 內部信號、GPU |
+
+::: {.notes}
+此頁對應原文 (b) 的口頭報告骨架，每節一句話。
+:::
+
+## §1 問題定義 {.smnsm-section}
+
+<p class="smnsm-kicker">Part 1 · Problem</p>
+
+<p class="smnsm-hero-lead">辦公室殘響、噪音、麥克風失配讓串流 ASR 出錯，錯誤傳到串流 MT——<br>能不能自適應，又不把 SimulST 的延遲拉高？</p>
+
+## 從情境描述對應到文獻正式名稱
+
+::: {.rd}
+| 候選正式名稱 | 對應理由 | 與需求的落差 |
+|---|---|---|
+| **Test-Time Adaptation (TTA)** for ASR（含 CTTA） | 無標註、無來源資料，推論時以 entropy minimization 等即時調整 | 多為 utterance 層級、非串流；額外計算直接變成延遲 |
+| Noise-robust／far-field ASR (DASR) | 直接處理噪音、殘響、多麥克風陣列 | 多為離線、會議轉寫導向；不考慮下游翻譯 |
+| PEFT 域適應（adapter、LoRA） | 少量參數適應新聲學環境，部署時可切換 | 通常需要目標域資料，非即時 |
+| Robust SimulST／ASR error propagation | 直接處理「ASR 錯 → MT 錯」 | 多從文字端補救，不處理聲學端 |
+| StreamST 與 computation-aware latency | 定義要守住的「延遲」怎麼量 | 本身不處理穩健性 |
+:::
+
+::: {.smnsm-takeaway}
+工作名稱：**Streaming test-time／online acoustic adaptation for robust cascaded SimulST** <span class="smnsm-evidence smnsm-evidence--inference">推論</span>
+:::
+
+::: {.notes}
+搜尋關鍵字：test-time adaptation ASR、continual test-time adaptation speech、noise robust ASR adapter、simultaneous speech translation robustness／error propagation、StreamLAAL／computation-aware latency。
+:::
+
+## 為什麼難：四重約束
+
+::: {.smnsm-grid-2 .tight .smnsm-stagger}
+::: {.smnsm-card}
+<span class="card-k">01 · 無標註</span>
+
+### 只能用無監督目標
+
+DSUTA 指出連續 TTA 在資料流過長時「may suffer from model collapse」。
+
+<span class="smnsm-evidence smnsm-evidence--direct">單篇 · 已核對</span>
+:::
+
+::: {.smnsm-card}
+<span class="card-k">02 · 延遲預算</span>
+
+### 每次梯度更新都是延遲
+
+CEA（Wav2vec2 Base）單句適應約 **1.07 秒**，辨識本身約 1.20 秒。
+
+<span class="smnsm-evidence smnsm-evidence--direct">單篇 · 已核對</span>
+:::
+
+::: {.smnsm-card}
+<span class="card-k">03 · 串流架構</span>
+
+### Cache 一致性
+
+Cache-aware FastConformer 靠有限 look-ahead 與 activation cache；參數在串流中途改變時 cache 如何維持，本輪未找到系統性討論。
+
+<span class="smnsm-evidence smnsm-evidence--inference">推論</span>
+:::
+
+::: {.smnsm-card}
+<span class="card-k">04 · 傳遞與評測</span>
+
+### 錯誤傳遞＋延遲指標偏差
+
+ASR 錯誤傳到 MT；SimulST 延遲指標在長音訊、computation-aware 設定下也有偏差（CA\*、YAAL）。
+
+<span class="smnsm-evidence smnsm-evidence--direct">共識</span>
+:::
+:::
+
+::: {.notes}
+部署時的 domain shift：訓練多為近講乾淨語音，部署有殘響、背景噪音、不同麥克風。Lin et al.（SUTA）指出 E2E ASR「suffers severe performance regression」於不同分佈。第 3 點原文寫成事實但核對標為推論，這裡已改為推論。
+:::
+
+## 概念邊界：哪些是本題，哪些容易混淆
+
+::: {.smnsm-grid-3 .tight}
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">核心手段</span>
+
+### 直接使用
+
+- **Streaming TTA**：無標註即時調整
+- **離線 PEFT**：adapter、LoRA，可預先準備
+- **延遲評測**：StreamLAAL、LongYAAL、CA\*（約束條件）
+:::
+
+::: {.smnsm-card}
+<span class="card-k">替代或互補</span>
+
+### 相鄰路線
+
+- 語音增強前端：去噪、去殘響
+- 大規模穩健預訓練：基線
+- MT 端容錯：下游補救
+- SimulST 讀寫策略：決定延遲
+:::
+
+::: {.smnsm-card .smnsm-card--flat}
+<span class="card-k">易混淆</span>
+
+### 需刻意區隔
+
+- **Code-switching ASR**：語言／詞彙偏移，不是聲學偏移
+- **Speaker adaptation**：CEA 把 speaker、noise、pronunciation、text-domain 分為不同偏移來源
+:::
+:::
+
+::: {.smnsm-takeaway}
+本題位於 robust ASR（訊號＋聲學模型）與 simultaneous translation（NLP 決策）的接縫處；CHiME-7/8 回顧（9 隊、32 套系統）指出幾乎所有參賽者已改用 E2E ASR。
+:::
+
+::: {.notes}
+原文的 Mermaid 概念邊界圖改成三欄卡片：實線（直接使用或約束）放左、替代互補放中、虛線易混淆放右。
+:::
+
+## §2–3 入門骨架與技術路線 {.smnsm-section}
+
+<p class="smnsm-kicker">Part 2 · Landscape</p>
+
+<p class="smnsm-hero-lead">SimulST 有 survey，ASR TTA 沒有。<br>六條路線中，R3／R4 正合流到「極少參數、甚至免反向傳播」。</p>
+
+## 入門骨架：一個月閱讀順序
+
+::: {.rd .sm}
+| 週 | 讀什麼（依序） | 讀完要能回答 |
+|---|---|---|
+| 1 | How "Real"（2412.18495）→ Liu et al. survey（2406.00497） | SimulST 與 StreamST 差在哪？為何人工預分段會讓結果失真？ |
+| 2 | Noroozi et al.（2312.17279）→ CHiME-7/8 回顧（2507.18161）→ Shi & Kawahara（2402.18275） | cache 與 look-ahead 如何決定延遲？為何 GSS 仍是主流？adapter 插哪一層？ |
+| 3 | SUTA（2203.14222）→ SGEM（2306.01981）→ CEA（2310.09505）→ DSUTA（2406.11064）→ E-BATS（2506.07078） | entropy minimization 為何有效又為何崩潰？每句適應要多少時間與記憶體？ |
+| 4 | BSTC（2104.03575）→ Better Late Than Never（2509.17349）→ CA\*（2410.16011）→ Hearing to Translate（2512.16378）→ StreamAtt（2406.06097） | 中英 SimulST 中 ASR 錯誤造成多少 BLEU 損失？該用哪個延遲指標？ |
+:::
+
+::: {.smnsm-takeaway}
+本次搜尋範圍內**沒有找到** ASR test-time adaptation 或串流 ASR 聲學自適應的近三年 survey，TTA 這一支改以奠基論文為骨架。
+:::
+
+::: {.notes}
+近三年 survey／tutorial：Liu et al. IJCAI 2024（SimulST 四大挑戰）、Papi et al. TACL 2025（回顧 110 篇論文、提出標準術語）、Cornell et al. 2025 CHiME-7/8 回顧（STCON 的 Llama-2 重評分只讓 macro-tcpWER 絕對降低 0.5%，NTTsmall 仍有 RTF 2.46）。
+:::
+
+## 六條技術路線 R1–R6：各自在 pipeline 的哪裡出手
+
+::: {.rmap}
+::: {.zone}
+<span class="zl">① 前端 · 進 ASR 之前</span>
+
+::: {.rt}
+<b>R1</b> <span class="rn">SE-Frontend</span>
+<span class="rd1">先把聲音弄乾淨</span>
+<span class="rs1">去噪 · 去殘響 · 波束成形</span>
+:::
+:::
+
+<span class="za">→</span>
+
+::: {.zone .main}
+<span class="zl">② 串流 ASR · 讓模型自己變穩</span>
+
+::: {.rt}
+<b>R2</b> <span class="rn">Robust-Pretraining</span>
+<span class="rd1">訓練時就見過各種噪音</span>
+<span class="rs1">何時：訓練階段 · 出廠即穩健</span>
+:::
+
+::: {.rt .pick}
+<b>R3</b> <span class="rn">PEFT-Adaptation</span>
+<span class="rd1">部署前，為場所訓好 adapter</span>
+<span class="rs1">何時：部署前離線 · 推論時固定</span>
+:::
+
+::: {.rt .pick}
+<b>R4</b> <span class="rn">Streaming-TTA</span>
+<span class="rd1">推論當下，邊聽邊自己調</span>
+<span class="rs1">何時：推論中 · 不需標註</span>
+:::
+:::
+
+<span class="za">→</span>
+
+::: {.zone}
+<span class="zl">③ 串流 MT · ASR 錯了之後</span>
+
+::: {.rt .pick}
+<b>R5</b> <span class="rn">MT-Robustness</span>
+<span class="rd1">讓翻譯容忍 ASR 的錯</span>
+<span class="rs1">下游補救 · 可與聲學端疊加</span>
+:::
+:::
+:::
+
+::: {.rt .wide}
+<b>R6</b> <span class="rn">E2E-SpeechLLM</span>
+<span class="rd1">不走 cascade：語音直接到譯文</span>
+<span class="rs1">取代 ①②③ 整條路徑</span>
+:::
+
+::: {.smnsm-takeaway}
+藍框 = 建議進第二輪：**R3**（先準備好）、**R4**（現場調）、**R5**（下游補救＋聯合評測）。
+:::
+
+::: {.notes}
+各路線優缺點（備註）：
+
+- R1 SE-Frontend｜優：可解釋、與 ASR 解耦；GSS 不需訓練資料、無域失配。缺：GSS 需整段上下文（數十秒），與低延遲串流衝突；單通道 DNN 增強可能產生 ASR 不喜歡的 artifacts（推論）。代表：CHiME-7/8 所有隊伍都依賴 GSS；AISHELL-4 提供 MVDR 基線。
+- R2 Robust-Pretraining｜優：零推論額外成本，最直接的延遲友善方案。缺：無法針對特定辦公室；CEA 顯示經 TTA 的 Wav2vec2 Base 在 LS-C 等級 1–4 都勝過未適應的 Whisper-Base（等級 3：WER 24.0 vs 30.1）。
+- R3 PEFT-Adaptation｜優：推論幾乎無額外延遲；可依場所切換。缺：需要目標域資料；切換時機需偵測；本輪未找到在 cache-aware 串流模型上做 adapter／LoRA 的論文（推論）。Shi & Kawahara：adapter 放淺層最有效、真實資料優於模擬。
+- R4 Streaming-TTA｜優：免標註、即時，正對應「進入新房間就自己調整」。缺：每步都是延遲；CHiME 回顧指出真實遠場只有邊際改善、計算成本顯著；多數只在 CTC／wav2vec2 類模型測。
+- R5 MT-Robustness｜優：與聲學端正交，可疊加。缺：無法救回 ASR 已遺失的資訊；噪音下 ASR 幻覺會被 LLM 放大（Hearing to Translate）。
+- R6 E2E-SpeechLLM｜優：避免文字瓶頸的錯誤傳遞；對噪音較穩。缺：計算重、延遲高（Aya cascade 與 Qwen3-Omni 需要 SFM 的 27–34 倍延遲）；長音訊退化；E2E 內部如何做聲學自適應尚少研究。
+
+原文把 AliMeeting 的基線也寫成 MVDR，核對為錯誤（實為 CDDMA beamformer），因此不引用。
+:::
+
+## R3 vs R4：路線比較 {.smnsm-section}
+
+<p class="smnsm-kicker">Part 2b · R3 vs R4</p>
+
+<p class="smnsm-hero-lead">PEFT-Adaptation 與 Streaming-TTA 解的是同一個問題，<br>差別在<strong>什麼時候</strong>調模型、用<strong>什麼訊號</strong>調。</p>
+
+::: {.notes}
+本段來源：r3_vs_r4_comparison.md（2026-11-12，劉宏源整理），用途是 group meeting 上請教授決定路線。來源標籤：[✓] 出自 Round 1 核對版報告且核對通過；[AI] 為 Claude 推論，或出自原文但尚未逐項親自核對；[我] 為自己的判斷。
+:::
+
+## R3 vs R4｜一句話差異
+
+::: {.claim}
+**R3 先準備好再上場，R4 上場後邊聽邊調。** [AI]{.tag .warn}
+:::
+
+兩者解的是同一個問題：部署環境的殘響、噪音、channel mismatch 和訓練資料不同（domain shift），讓串流 ASR 的 CER 變差，錯誤再傳到串流 MT。
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">R3 · PEFT-Adaptation</span>
+
+### 部署前離線訓練
+
+adapter 訓好後推論時固定，只多一次 forward。
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">R4 · Streaming-TTA</span>
+
+### 推論當下更新
+
+用無監督 loss 在現場調少量參數，形成回饋迴圈。
+:::
+:::
+
+::: {.smnsm-takeaway}
+差別在**什麼時候**調模型、用**什麼訊號**調。
+:::
+
+## R3 vs R4｜兩條路線在 pipeline 裡的位置
+
+::: {.smnsm-flow .sm}
+::: {.smnsm-node}
+Acoustic features
+<p>noise included · 逐 chunk 輸入</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+FastConformer encoder
+<p>cache-aware 串流</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+RNN-T decoder
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+辨識結果
+<p>給串流 MT</p>
+:::
+:::
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">R3 · 實線 · 部署前</span>
+
+### R3 adapter → encoder
+
+部署前離線訓練，推論時固定。
+:::
+
+::: {.smnsm-card style="border: 2px dashed #c78124; background: #fffaf1;"}
+<span class="card-k">R4 · 虛線 · 推論當下的回饋迴圈</span>
+
+### decoder ⇢ 無監督 loss ⇢ 參數更新 ⇢ encoder
+
+loss 如 entropy；推論當下更新少量參數。
+:::
+:::
+
+::: {.smnsm-takeaway}
+R3 只多了 adapter 的 forward；R4 多了一個回饋迴圈，每轉一圈都是額外的延遲。[AI]{.tag .warn}
+:::
+
+::: {.notes}
+實線：R3 adapter 部署前訓好，推論時固定。虛線：R4 推論當下的回饋迴圈（decoder → 無監督 loss → 參數更新 → encoder）。
+
+輸入端：encoder 吃的是從含噪音訊逐 chunk 抽出的聲學特徵，噪音、殘響、通道失配都已經在特徵裡。
+
+關鍵設計問題（推論）：何時更新、更新多少參數；更新後 cache 如何處理；更新是否應以下游 MT 的信號（而不只 ASR entropy）引導。前端增強（R1）可選擇性加在 encoder 之前，MT 端容錯（R5）在辨識結果之後。
+:::
+
+## R3 vs R4｜選了之後，實際要做什麼
+
+::: {.rd}
+| 步驟 | R3：延伸學長的 channel normalization | R4：Streaming-TTA |
+|---|---|---|
+| 1 | 準備「同一句話、乾淨版 vs 劣化版」的成對資料：真實多通道錄音，或用 RIR／麥克風響應對乾淨華語做模擬 | 不需要額外資料，測試音訊本身就是訓練訊號 |
+| 2 | 在 Nemotron encoder 插 adapter，用學長的 MSE 目標**離線**訓練 | 推論時每隔一段，用無監督 loss 更新少量參數（如 LayerNorm） |
+| 3 | 部署時 adapter 固定，直接串流推論 | 要先解決三個工程問題：RNN-T 的 entropy 怎麼定義、參數改了以後 cache 怎麼處理、長串流會不會 collapse |
+| 核心問題 | 只看得到一個 chunk、look-ahead 有限時，正規化還有沒有效？ | 在延遲預算內，能不能真的把 CER 調回來？ |
+:::
+
+<p class="meta">來源：[AI]{.tag .warn}（依學長論文與 SUTA 的做法推導）</p>
+
+## R3 vs R4｜逐項比較（1/2）
+
+::: {.rd .lg}
+| 面向 | R3 | R4 | 來源 |
+|---|---|---|---|
+| 需要的資料 | **成對資料**（同一句話多通道，不用轉寫） | 不需要 | [AI]{.tag .warn} 學長 §II-B；[AI]{.tag .warn} SUTA |
+| 訓練成本 | 離線訓 adapter，一次性 | 幾乎沒有離線訓練 | [AI]{.tag .warn} |
+| 推論延遲 | 只多 adapter 的 forward，**幾乎零** | **每次更新都加延遲**；SUTA 離線每句適應約 0.48 秒（A5000、wav2vec2 base、DSing） | [✓]{.tag .ok} (b) |
+| 沒見過的環境 | 靠訓練時見過的多樣性泛化；學長在完全沒訓練過的 webcam 通道上，多數 decoder 約 10% 相對改善 | 理論上能現場適應，但 chunk 短、訊號弱 | [AI]{.tag .warn} 學長 Table I；[AI]{.tag .warn} |
+| 可依靠的資源 | 學長的方法與程式碼（github.com/610494/channel-asr），可以直接問學長 | SUTA、DSUTA、E-BATS 等開源程式，但都不是串流、多數是 CTC | [AI]{.tag .warn}；[✓]{.tag .ok} §5 |
+:::
+
+## R3 vs R4｜逐項比較（2/2）
+
+::: {.rd .lg}
+| 面向 | R3 | R4 | 來源 |
+|---|---|---|---|
+| 真實場景的證據 | Shi & Kawahara：adapter 放淺層最有效、真實資料比等量模擬資料有效 | CHiME-7/8 回顧：TTA「only marginal improvements despite significant computational overhead」 | [✓]{.tag .ok} §3、TL;DR |
+| 最大風險 | **novelty**：被說是「學長方法＋串流模型」的直接組合；和學長的工作重疊 | **做不起來**：延遲撐不住，或收益很小 | [AI]{.tag .warn} |
+| 審稿人第一個問題 | 「和 Huang et al. 2025 差在哪？」 | 「多花的延遲值得嗎？為什麼不直接離線訓 adapter？」 | [AI]{.tag .warn} |
+| 2 週 pilot | 把 adapter 插進 Nemotron，用模擬的成對資料訓練，看 160／560 ms chunk 下 CER 還降不降 | 把 SUTA 式的 LayerNorm 更新原封不動套到 Nemotron 的 chunk 上，量 CER 變化、每 chunk 多出的延遲、長串流穩不穩 | [AI]{.tag .warn} |
+:::
+
+::: {.notes}
+「學長」論文：Huang, Chen, Lee, Chen, Wang. Revealing the Role of Audio Channels in ASR Performance Degradation（arXiv 2508.08967）。Round 1 報告漏了這篇，R3 的代表論文要補上。學長論文 Table I–III 的數字尚待親自對一次原文表格。
+:::
+
+## SUTA 在兩條路線裡的角色
+
+SUTA（Lin, Li, Lee, SLT 2022, arXiv 2203.14222）是**第一篇 ASR test-time adaptation**，也是 R4 這條路線的起點。[✓]{.tag .ok}
+
+::: {.smnsm-flow .sm}
+::: {.smnsm-node .gap}
+SUTA
+<p>2022 · 首個 ASR TTA</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+SGEM
+<p>2023 · 序列層級、beam search</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+CEA
+<p>2023–24 · 信心加權</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+DSUTA
+<p>2024 · 連續適應、dynamic reset</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node}
+E-BATS
+<p>2025 · 免反向傳播</p>
+:::
+:::
+
+<p class="flow-cap">R4 的演進主線：全部是非串流設定。[✓]{.tag .ok}</p>
+
+::: {.claim}
+**不管選哪條都要懂 SUTA：選 R4，它是要改的方法；選 R3，它是要打贏的對手。** [AI]{.tag .warn}
+:::
+
+::: {.notes}
+5a（選 R4）：R4 的論文本質上是在說「SUTA 這類方法搬到串流會壞，我們把它修好」。5b（選 R3）：學長的方法和 SUTA 在解同一個問題，做法剛好相反。
+
+演進主線的代表數字（Round 1 核對版）：
+- LS-C 平均 WER：Source 31.6 → SUTA 25.1 → CEA 24.8（Wav2vec2 Base、非串流）；原文平均欄與各級數值不自洽，口頭建議改引 CHiME-3：31.2 → 25.0 → 24.5。
+- 每句適應時間：SUTA 0.483 秒、CEA 0.879 秒（A5000、DSing-test）；LibriSpeech test-other 上 CEA 1.07 秒。
+- E-BATS：比反向傳播法省 2.0–6.4 倍 GPU 記憶體，比免反向傳播基線好 4.1–13.5%。注意它解決的是記憶體，不是延遲，CMA-ES 會增加適應延遲。
+- 主線上沒有任何一篇在 cache-aware 或 transducer 串流架構上、以 chunk 層級報告延遲（推論）。
+:::
+
+## 5a｜選 R4：SUTA 是出發點，也是 baseline
+
+::: {.rd}
+| | 從 SUTA 沿用 | 我要改的 |
+|---|---|---|
+| Loss | entropy minimization＋minimum class confusion | SUTA 是 CTC，Nemotron 是 RNN-T，entropy 要重新定義 |
+| 調什麼參數 | 只調 LayerNorm（論文也試了 feature extractor） | 調哪幾層、多久更新一次 |
+| 單位 | 一整句話 | 一個 chunk（160／560 ms） |
+| 重設 | 每句處理完就重設回原模型（episodic） | 長串流要持續適應，還要處理 cache |
+:::
+
+<p class="meta">來源：沿用欄 [AI]{.tag .warn} SUTA（待我親讀核對，更新步數待查）；改的欄 [AI]{.tag .warn}</p>
+
+::: {.compact}
+- Pilot：先把 SUTA 原封不動套到 Nemotron，看它**怎麼壞**；壞的方式就是論文要解的問題
+- 主實驗一定要比 SUTA，加上後續的 SGEM、DSUTA
+:::
+
+## 5b｜選 R3：SUTA 不是我的方法，但審稿人會拿它來比
+
+::: {.rd}
+| | SUTA（R4） | 學長的 channel normalization（R3） |
+|---|---|---|
+| 什麼時候調 | 推論當下 | 部署前離線 |
+| 訓練訊號 | 自己的 entropy，沒有正確答案可以對 | 原 encoder 吃乾淨通道當 teacher，用 MSE 把其他通道的特徵拉過去 |
+| 需要的資料 | 只要當下這句音訊 | 同一句話的多通道平行錄音 |
+| 推論多花的時間 | 每句多做好幾次 forward＋backward | 只多 adapter 的 forward |
+| 共同點 | 都只動一小部分參數，主幹凍結 | 同左 |
+:::
+
+<p class="meta">來源：[AI]{.tag .warn} SUTA、學長 §II-B；整理 [AI]{.tag .warn}</p>
+
+::: {.compact}
+- 審稿人很可能問：「為什麼不直接用 SUTA 這種免資料的方法？」
+- 所以 R3 的論文要把 SUTA 放進比較表，證明我的方法在**延遲**上明顯更好、CER 至少不輸。SUTA 就是 R3 最有力的對照組
+:::
+
+## 5c｜合流：R3 打底，R4 只在需要時補上
+
+::: {.smnsm-flow}
+::: {.smnsm-node}
+R3 離線訓練
+<p>先訓好 adapter</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node .ctl}
+偵測環境
+<p>只在偵測到沒見過的環境時</p>
+:::
+[→]{.smnsm-flow-arrow}
+
+::: {.smnsm-node .gap}
+SUTA 式微調
+<p>推論時只用 entropy 微調這幾層 adapter</p>
+:::
+:::
+
+::: {.smnsm-takeaway}
+先用 R3 離線訓好 adapter，推論時只用 SUTA 式的 entropy 微調這幾層 adapter，而且只在偵測到沒見過的環境時才更新。[AI]{.tag .warn}
+:::
+
+## 論文主張長什麼樣（示例）
+
+<p class="meta">示例，〔〕是佔位，pilot 之前沒有任何數字。</p>
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">R3</span>
+
+學長的 channel normalization 搬到 cache-aware 串流模型時，效果隨 chunk 變小而衰退〔N%〕；我們提出〔chunk 層級的設計〕，在 80–560 ms 都維持〔M%〕CER 改善，**不增加延遲**，並讓下游翻譯 COMET +〔K〕。
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">R4</span>
+
+既有 ASR TTA 直接用在串流 RNN-T 上會〔延遲爆增／collapse〕；我們提出〔只在特定層、特定時機更新〕的方法，在每 chunk 額外延遲 ≤〔N〕ms 的條件下，把含噪 CER 降低〔M%〕。
+:::
+:::
+
+::: {.smnsm-takeaway}
+只做「層數掃描」單獨發 paper 偏弱，會被當成消融實驗；它應該放在分析段，解釋設計選擇。[AI]{.tag .warn}
+:::
+
+## 什麼條件會把選擇推向哪邊
+
+::: {.rd .sm}
+| 教授的回答 | 傾向 | 來源 |
+|---|---|---|
+| 實驗室有華語多通道平行語料，或接受用模擬資料 | R3 | [AI]{.tag .warn} |
+| 沒有成對資料、也不能模擬 | R4 | [AI]{.tag .warn} |
+| 延遲預算很緊（例如邊緣裝置） | R3 | [AI]{.tag .warn} |
+| 部署環境事先完全無法預期，非得現場適應 | R4 | [AI]{.tag .warn} |
+| 目標是 Interspeech 2027 | R3 比較穩：方法已知、有程式碼、有學長可以問 | [AI]{.tag .warn} |
+| 目標是長論文、時間比較多 | R4 或合流，空間比較大 | [AI]{.tag .warn} |
+:::
+
+::: {.claim .warn}
+**時間限制**：Lab-Hub README 列的 Interspeech 2027 截稿日是 2027-02-09（更新至 02-16），約 13 週，**要自己上官網再確認**。截稿前不到 4 個月不開新的資料蒐集 → 選 R3 只能用現有語料或模擬資料；而真實資料比等量模擬資料有效（Shi & Kawahara）。[Lab-Hub]{.tag} [✓]{.tag .ok}
+:::
+
+## 我的判斷
+
+::: {.claim}
+**我傾向：R4 Streaming-TTA，R3 當 baseline 和退路。** [我]{.tag}
+:::
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card}
+<span class="card-k">為什麼</span>
+
+- R3 最大的風險是 **novelty**：可能被認為只是學長的方法套到串流模型
+- R4 的 gap **有文獻支撐**：既有 ASR TTA 都是離線、單句的設定，CEA 作者也說沒有為串流設計
+:::
+
+::: {.smnsm-card}
+<span class="card-k">沒把握的地方</span>
+
+- **延遲**：就算接得起來，每次更新多出的延遲可能大到 SimulST 用不了
+- **R4 也有 novelty 風險**：「串流 TTA 沒人做」只是報告沒找到，SUTA、DSUTA 的團隊可能也在做
+:::
+:::
+
+::: {.smnsm-card .smnsm-card--flat style="padding: 14px 20px;"}
+<span class="card-k">怎麼降低風險</span>
+
+先做 **2 週 pilot**，事先訂好放棄判準；延遲撐不住就改走**合流**（R3 adapter 加上偶爾的輕量更新）。
+:::
+
+::: {.smnsm-takeaway}
+想請教授判斷：這個延遲風險值不值得冒？可接受的延遲預算大概多少？
+:::
+
+## 要請教授決定的事
+
+::: {.compact}
+1. 走哪條路線：**R3**（延伸學長）、**R4**，還是**合流**？
+2. 學長這條線還有沒有在做？我接下去做，會不會和學長或其他同學重疊？
+3. 實驗室有沒有華語的多通道平行語料？接不接受用模擬資料？
+4. 延遲預算多少？目標硬體是 GPU 伺服器還是邊緣裝置？
+5. 目標會議：Interspeech（4 頁）還是長論文？
+:::
+
+::: {.notes}
+還沒核對的事（做投影片前要處理）：
+- SUTA 的細節（loss、更新步數、調哪些參數）：親讀 SUTA 原文後核對
+- 學長論文的數字（Table I、II、III）：自己對一次原文表格
+- 「串流 TTA 沒人做」：只是 Round 1 報告沒找到，不等於沒人做；要等 Round 2 和 arXiv 近 2 個月的搜尋
+- Round 1 報告漏了學長的論文（arXiv 2508.08967），R3 的代表論文要補上
+:::
+
+## §4 評測現況 {.smnsm-section}
+
+<p class="smnsm-kicker">Part 3 · Evaluation</p>
+
+<p class="smnsm-hero-lead">WER、CER、BLEU、StreamLAAL 各說各話；<br>延遲指標本身也不可靠。</p>
+
+## ASR 端：代表數字
+
+::: {.rd .sm}
+| 資料集 | 數字 | 條件 | 來源 |
+|---|---|---|---|
+| LibriSpeech test-other（串流） | RNNT WER 5.4%＠1040 ms → 7.0%＠0 ms；CTC 6.2 → 8.4% | 114M、cache-aware | NVIDIA 模型卡 |
+| 串流吞吐量（單張 H100） | Nemotron 3.5 Streaming 0.6B：80 ms 時 240 路 vs Parakeet 1.1B 14 路 | zh-CN 僅 broad-coverage | NVIDIA 模型卡 |
+| CHiME-3 | WER 31.2 → SUTA 25.0 → CEA 24.5 | Wav2vec2 Base、非串流 | CEA 2310.09505 |
+| L2-Arctic 中文母語者 | WER 28.5 → SUTA 23.3 → CEA 23.0 | 英語口音偏移 | CEA 2310.09505 |
+| CHiME-7/8 DASR | STCON macro tcpWER 19.9%；CHiME-6 33.6%（最佳系統仍 > 30%） | 多通道、ensemble、非串流 | 回顧 Fig. 6 讀數 |
+| AISHELL-4 Eval（8 通道） | CER 無前端 32.56% → MVDR 前端 30.49% | oracle 分段、非串流 | 2104.03603 |
+| AliMeeting Eval | CER 近講 7.8–9.9%；遠場單通道 33.3–49.0%；最佳 29.7% | Conformer、非串流 | 2110.07393 |
+:::
+
+::: {.smnsm-takeaway}
+中文遠場會議 CER 約 30%；所有 TTA 數字都是非串流設定。
+:::
+
+::: {.notes}
+模型卡數字為官方自報。CHiME-7/8 的 19.9% 與 33.6% 是從回顧論文 Figure 6 讀取，系列對應依文字推定。AliMeeting 的「含外部資料與模擬噪音殘響」只適用 Conformer C/D。
+:::
+
+## 翻譯端：ASR 錯誤的代價
+
+::: {.smnsm-metric-row}
+::: {.m}
+<span class="num bad">−3.3～3.4 BLEU</span>
+<span class="lab">BSTC test 中→英：ASR 輸入 34.12／36.79 vs 轉寫輸入 37.54／40.12（AL 相近）</span>
+:::
+
+::: {.m}
+<span class="num good">16.2 → 17.7 BLEU</span>
+<span class="lab">BSTC dev：ASR→MT 加 text rewrite（COMET 71.7 → 72.9）；整句、非同步</span>
+:::
+
+::: {.m}
+<span class="num bad">∆noise ≥ 38</span>
+<span class="lab">NoisyFLEURS：所有模型在 babble 噪音下 xCOMET-QE 下降至少 38</span>
+:::
+:::
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card}
+<span class="card-k">Hearing to Translate · 22 套系統</span>
+
+### SpeechLLM 較穩，但較慢
+
+噪音下除 Spire 外 SpeechLLM 與 SFM、cascade 同等或更穩；cascade 的 ASR 幻覺會被 LLM 放大。
+:::
+
+::: {.smnsm-card}
+<span class="card-k">BSTC 的限制</span>
+
+### 不是受控噪音基準
+
+BSTC 是講座錄音、串流 ASR CER 10.32%；並非受控噪音或殘響條件。
+:::
+:::
+
+::: {.notes}
+BSTC 論文中稱為 WER 的數字實際按中文字元計算（即 CER），AL 單位未註明（AL 7.28→10.87 vs 7.20→10.74）。CMU 與 BeaverTalk 的 ACL 60/60 數字是二手來源，依規則不上投影片。
+:::
+
+## 評測本身的問題
+
+::: {.compact}
+1. **延遲指標排名不一致**：含退化策略時，YAAL 對 true latency 的成對比較準確率 **98%**，其他指標落後 > 25 個百分點。
+2. **短格式評測等於離線**：41%（1–2 秒區間）到 72%（4–5 秒）的字在分段結束後才輸出。
+3. **長音訊重分段影響大**：StreamLAAL（mWERSegmenter）82%；LongYAAL＋SoftSegmenter **94%**。
+4. **computation-aware 延遲算錯**：CA-LAAL 從 25 秒 6850 ms 暴增到 100 秒 23460 ms，CU 約維持 8181 ms。
+5. **穩健性與翻譯評測脫節**：NOTSOFAR-1 上下游摘要，「even systems with over 50% … tcpWER」可與最佳（約 11%）相當。
+6. **TTA 延遲報告不一致**：SUTA、SGEM、CEA 用不同 GPU、不同句長，皆非 chunk 層級。<span class="smnsm-evidence smnsm-evidence--inference">推論</span>
+:::
+
+::: {.smnsm-takeaway}
+對本題特別重要：TTA 的額外計算**只會在 computation-aware 指標中出現**——必須採用 LongYAAL／CA\* 類修正指標。
+:::
+
+::: {.notes}
+來源：1–3 為 Polák et al. Better Late Than Never（2509.17349）；4 為 CA*（2410.16011），即使約 5 秒預分段語音 AL 與 LAAL 誤差也超過 300 ms；5 為 CHiME 回顧，用 Gemini 2.0 Flash 做摘要。原文 How Real「91.8% 未承認使用人工預分段」無法核對，不上投影片。第 5 點「兩邊很少同時報告」核對為推論。
+:::
+
+## §5–8 動態、成熟度、空缺與商機 {.smnsm-section}
+
+<p class="smnsm-kicker">Part 4 · Outlook</p>
+
+<p class="smnsm-hero-lead">離線穩健 ASR 已成熟；<br>「延遲受限＋翻譯導向」的自適應仍是空白。</p>
+
+## 動態與成熟度判斷
+
+::: {.rd .sm}
+| 子領域 | 判斷 | 依據 |
+|---|---|---|
+| 噪音／遠場穩健 ASR（離線） | [成熟]{.lvl .mature} | CHiME 系列逾十年；頂尖配方為 GSS＋預訓練 E2E＋ensemble |
+| ASR 的 TTA（單句） | [快速成長]{.lvl .grow} | 2022 SUTA 起，SGEM、CEA、DSUTA、E-BATS 接連出現；仍多在 CTC／wav2vec2 |
+| 串流 ASR 的 TTA | [萌芽]{.lvl .seed} | 未找到在串流架構上以 chunk 層級延遲報告的 TTA；CEA 明言未針對串流設計 |
+| 穩健 SimulST（聲學＋翻譯聯合） | [萌芽]{.lvl .seed} | 錯誤傳遞研究多在 MT 端；未找到受控噪音下的中→英 SimulST 評測 |
+| 整體範式壓力 | [被吸收中]{.lvl .absorb} | 大規模預訓練與 SpeechLLM 提升原生穩健性；「純 ASR TTA」空間縮小 |
+:::
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card .smnsm-card--flat}
+<span class="card-k">活躍團隊（觀察，非計量）</span>
+
+KAIST（SGEM）· NUS（CEA）· FBK／Charles Univ.（StreamAtt、YAAL）· CMU（CA\*）· NVIDIA NeMo · NTT、STCON（CHiME-8）
+:::
+
+::: {.smnsm-card .smnsm-card--flat}
+<span class="card-k">工具鏈與產品化</span>
+
+NeMo cache-aware 串流＋adapter 訓練腳本 · SimulEval · OmniSTEval（YAAL、LongYAAL）· SUTA／CEA／E-BATS 開源；IWSLT 已將長音訊、CA 延遲列為正式評測
+:::
+:::
+
+::: {.notes}
+本輪未執行論文數量的計數查詢，依規定不提供數量。臺大李宏毅團隊（SUTA、DSUTA）也很活躍，但 LatentASR 的 arXiv 編號與作者無法核對，故未列。simulstream 屬未核對，未列。「萌芽」「空缺」判斷基於約 18 次搜尋與數十篇論文，並非系統性文獻回顧。
+:::
+
+## 未解問題與台灣語境的空缺
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card}
+<span class="card-k">文獻中反覆出現</span>
+
+- TTA 尚未針對串流設計（CEA）
+- 連續 TTA 的 model collapse 與域切換偵測（DSUTA）
+- 反向傳播式 TTA 記憶體開銷大（E-BATS）
+- 真實遠場只有邊際改善、計算成本顯著（CHiME 回顧）
+- 噪音下 ASR 幻覺被 LLM 放大（Hearing to Translate）
+- 長音訊與 CA 延遲指標偏差（CA\*、YAAL）
+- SE 前端與 ASR 後端失配；模擬不如真實資料（Shi & Kawahara）
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">繁中／台灣語境</span>
+
+- AISHELL-4、AliMeeting 皆為無強烈口音、大陸錄製；未找到台灣辦公室遠場中文語料
+- Nemotron 3.5 Streaming 中 zh-CN 僅 broad-coverage，模型卡未見 zh-TW
+- cascade 偏好標準普通話（ManDi），台灣華語是否同樣落差未見報告
+- 中英夾雜＋聲學偏移：entropy 類 TTA 可能把語言不確定性誤當聲學不確定性
+- 缺乏中→英、含噪條件的 SimulST 基準
+
+<span class="smnsm-evidence smnsm-evidence--inference">推論，未系統查證</span>
+:::
+:::
+
+::: {.notes}
+左欄對應原文 §7.1 表格 11 項中的 7 項；其他還有：TTA 難以處理 text-domain shift（CEA）、串流 ASR 錯誤傳遞與額外延遲是 cascade 的兩大限制（Chen et al.）、多數 SimulST 依賴人工預分段（How Real）、跨場景泛化困難（CHiME 回顧）。
+:::
+
+## 商機：誰會付費、痛點在哪
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card}
+<span class="card-k">付費場景與痛點</span>
+
+- 跨國企業會議字幕與翻譯、展會與記者會口譯、客服通話、教育講座
+- 會議室麥克風與殘響差異大、免持裝置 channel mismatch
+- ASR 錯誤經 LLM 翻譯後「**流暢地錯**」，更難察覺
+- 高並發部署下，每句額外計算都會壓縮吞吐量
+:::
+
+::: {.smnsm-card}
+<span class="card-k">轉化形態與風險</span>
+
+- (a) 以場所為單位的 adapter 套件（安裝時錄幾分鐘即生成）
+- (b) 免反向傳播、只調 LayerNorm 或 prompt 的輕量模組
+- (c) 翻譯導向的穩健性評測服務
+- **風險**：大模型更新吃掉收益；TTA 線上崩潰；延遲改善難以被客戶驗證
+:::
+:::
+
+<span class="smnsm-evidence smnsm-evidence--inference">本頁皆為推論</span>
+
+## 推薦進第二輪的 3 條路線
+
+::: {.smnsm-grid-3 .tight .smnsm-stagger}
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">01 · R4</span>
+
+### Streaming-TTA
+
+最直接對應「換情境自己穩下來」；有清楚演進與開源碼。空缺：**chunk 層級更新、與 cache 共存、CA 延遲報告**。必須正面回應 CHiME 的負面結果。
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">02 · R3</span>
+
+### PEFT-Adaptation
+
+推論幾乎零額外延遲，最符合「不讓 latency 提高太多」；NeMo 原生支援 adapters。可與 R4 合流：以 TTA 選擇或微調 adapter。
+:::
+
+::: {.smnsm-card .smnsm-card--accent}
+<span class="card-k">03 · R5</span>
+
+### MT-Robustness＋聯合評測
+
+最終目標是翻譯品質。把聲學自適應的收益以 **BLEU／COMET＋LongYAAL／CA\*** 一起報告，本身就是文獻缺少的評測貢獻。
+:::
+:::
+
+::: {.smnsm-takeaway}
+E-BATS 的免反向傳播解決的是**記憶體**瓶頸，不是延遲——CMA-ES 反而會增加適應延遲。<span class="smnsm-evidence smnsm-evidence--inference">推論</span>
+:::
+
+::: {.notes}
+原文 (c) 寫「E-BATS 的免反向傳播方向正好解決延遲與記憶體瓶頸」，核對發現與原文 Limitations 不符，因此投影片上已修正為只解決記憶體。
+:::
+
+## §9 切入前需要實驗室內部回答的問題
+
+::: {.rd .sm}
+| # | 問題 | 影響 |
+|---|---|---|
+| 1 | 有哪些含真實殘響、噪音、不同麥克風的中文（台灣華語）語音？有無英文譯文？ | 決定 R3 是否可行（真實資料優於模擬） |
+| 2 | 能否取得多通道陣列資料？部署端單麥還是陣列？ | 決定 R1 是否在考慮範圍與延遲上限 |
+| 3 | 維持 cascade（NeMo 串流 ASR＋串流 MT）還是轉向 E2E／SpeechLLM？ | R3／R4 作用在 cascade 的 ASR 端；R6 的自適應位置完全不同 |
+| 4 | 可接受的延遲預算？目標硬體是 GPU 伺服器還是邊緣裝置？ | 決定 TTA 能否用反向傳播、更新頻率與 chunk 大小 |
+| 5 | 先前 chunk 大小 benchmark 與 CER 評測能否沿用？有無 CA 延遲量測？ | 可直接畫「自適應 CER 改善 vs 延遲增加」權衡曲線 |
+| 6 | 串流 MT 用什麼模型與讀寫策略？能取得內部信號嗎？ | 決定能否做「以 MT 信心引導 ASR 更新」 |
+| 7 | 有無 code-switching ASR 或 Speech LLM 成果要延續？ | 需區分聲學偏移與語言偏移 |
+| 8 | GPU 是否足以微調 0.6B 串流模型或跑多次 TTA 消融？ | 決定用 Nemotron 0.6B 或 114M 等級模型 |
+:::
+
+## 入門必讀 5 篇與本報告限制
+
+::: {.smnsm-grid-2 .tight}
+::: {.smnsm-card}
+<span class="card-k">必讀（皆已開啟原文、URL 已核對）</span>
+
+1. **SUTA** — Lin, Li, Lee · [2203.14222](https://arxiv.org/abs/2203.14222)
+2. **DSUTA** — Lin, Huang, Lee · [2406.11064](https://arxiv.org/abs/2406.11064)
+3. **Stateful Conformer** — Noroozi et al. · [2312.17279](https://arxiv.org/abs/2312.17279)
+4. **How "Real"** — Papi et al. · [2412.18495](https://arxiv.org/abs/2412.18495)
+5. **Hearing to Translate** — Papi et al. · [2512.16378](https://arxiv.org/abs/2512.16378)
+:::
+
+::: {.smnsm-card .smnsm-card--flat}
+<span class="card-k">Caveats</span>
+
+- 二手、無法核對、錯誤的項目一律未上投影片
+- CHiME-7/8 數字為回顧論文圖表讀數
+- 未納入中文來源，可能低估中國大陸與台灣團隊
+- 約 18 次搜尋、數十篇論文，非系統性回顧，可能遺漏 2026 新作
+- 本輪未做論文數量統計
+:::
+:::
+
+::: {.notes}
+下一步（第 7 步）：親讀上述 5 篇，每篇自查 2–3 個關鍵數字，填入原文的親讀紀錄表。
+:::
+
+## 主要資料來源
+
+::: {.refs}
+- Lin et al. SUTA, [arXiv:2203.14222](https://arxiv.org/abs/2203.14222) · Kim et al. SGEM, [arXiv:2306.01981](https://arxiv.org/abs/2306.01981) · Liu et al. CEA, [arXiv:2310.09505](https://arxiv.org/abs/2310.09505)
+- Lin et al. DSUTA, [arXiv:2406.11064](https://arxiv.org/abs/2406.11064) · Dong et al. E-BATS, [arXiv:2506.07078](https://arxiv.org/abs/2506.07078)
+- Shi & Kawahara, Adapter for Noise Robust ASR, [arXiv:2402.18275](https://arxiv.org/abs/2402.18275) · Noroozi et al., Stateful Conformer, [arXiv:2312.17279](https://arxiv.org/abs/2312.17279)
+- Cornell et al., CHiME-7/8 DASR Review, [arXiv:2507.18161](https://arxiv.org/abs/2507.18161) · Fu et al., AISHELL-4, [arXiv:2104.03603](https://arxiv.org/abs/2104.03603) · Yu et al., M2MeT, [arXiv:2110.07393](https://arxiv.org/abs/2110.07393)
+- Zhang et al., BSTC, [arXiv:2104.03575](https://arxiv.org/abs/2104.03575) · Wu et al., Text Rewrite, [COLING 2025 Industry](https://aclanthology.org/2025.coling-industry.28.pdf) · Chen et al., [arXiv:2106.06636](https://arxiv.org/abs/2106.06636)
+- Liu et al., E2E SimulST Survey, [arXiv:2406.00497](https://arxiv.org/abs/2406.00497) · Papi et al., How "Real", [arXiv:2412.18495](https://arxiv.org/abs/2412.18495) · StreamAtt, [arXiv:2406.06097](https://arxiv.org/abs/2406.06097)
+- Xu et al., CA\*, [arXiv:2410.16011](https://arxiv.org/abs/2410.16011) · Polák et al., Better Late Than Never, [arXiv:2509.17349](https://arxiv.org/abs/2509.17349) · Papi et al., Hearing to Translate, [arXiv:2512.16378](https://arxiv.org/abs/2512.16378)
+- Huang et al., Revealing the Role of Audio Channels in ASR Performance Degradation, [arXiv:2508.08967](https://arxiv.org/abs/2508.08967) · [code](https://github.com/610494/channel-asr)
+- NVIDIA 模型卡：[stt_en_fastconformer_hybrid_large_streaming_multi](https://huggingface.co/nvidia/stt_en_fastconformer_hybrid_large_streaming_multi) · [nemotron-3.5-asr-streaming-0.6b](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b)
+:::
+
+<p class="meta">研究內容來源：<code>../../research/lowlatency_streaming_asr_r1_2026-11-07_checked.md</code>（2026-11-07 核對版）</p>

@@ -16,9 +16,12 @@ report/
 │   ├── report02.qmd / report02.html
 │   ├── _quarto.yml / styles.css / report02.css
 │   └── SimulST*.png        # 兩張報告圖片
-└── report03/               # T1、T2、T6 研究提案
-    ├── report03.qmd / report03.html
-    └── _quarto.yml / styles.css / report03.css
+├── report03/               # T1、T2、T6 研究提案
+│   ├── report03.qmd / report03.html
+│   └── _quarto.yml / styles.css / report03.css
+└── report04/               # 低延遲聲學自適應文獻調查＋R3/R4 路線比較
+    ├── report04.qmd / report04.html
+    └── _quarto.yml / theme.scss / report04.css
 ```
 
 ## 預覽與輸出
